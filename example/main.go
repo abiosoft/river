@@ -18,8 +18,8 @@ func main() {
 			w.Header().Set("X-River-BeforeWrite", "Hello World Before Write")
 		})
 	{
-		var user river.EmptyModel
-		user.GetFunc(func(r *http.Request) (interface{}, int) {
+		var user river.Model
+		user.Get(func(r *http.Request) (interface{}, int) {
 			v := river.Vars(r)
 			return map[string]interface{}{
 				"name": "Hello",

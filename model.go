@@ -11,99 +11,51 @@ func Vars(r *http.Request) map[string]string {
 	return mux.Vars(r)
 }
 
-// ModelFunc is a function returned by a model.
+// ModelFunc is a function executed by models to handle requests.
 // data is the data return by the model and status is HTTP status code.
+// 0 status code should be returned if request is ignored or not handled.
 type ModelFunc func(*http.Request) (data interface{}, status int)
 
 // Model is a REST endpoint data model.
-type Model interface {
-	Get(*http.Request) (interface{}, int)
-	Post(*http.Request) (interface{}, int)
-	Put(*http.Request) (interface{}, int)
-	Patch(*http.Request) (interface{}, int)
-	Delete(*http.Request) (interface{}, int)
+// It maps request types (e.g. "GET", POST") as key to ModelFunc.
+// Empty value of Model is usable.
+type Model map[string]ModelFunc
+
+// Get sets the model function for Get requests.
+func (e *Model) Get(f ModelFunc) {
+	e.set("GET", f)
 }
 
-// EmptyModel is an empty data model implementation.
-type EmptyModel map[string]ModelFunc
-
-// Get satisfies Model.
-func (e EmptyModel) Get(r *http.Request) (interface{}, int) {
-	return e.handle("GET", r)
+// Post sets the model function for Get requests.
+func (e *Model) Post(f ModelFunc) {
+	e.set("POST", f)
 }
 
-// Post satisfies Model.
-func (e EmptyModel) Post(r *http.Request) (interface{}, int) {
-	return e.handle("POST", r)
+// Put sets the model function for Get requests.
+func (e *Model) Put(f ModelFunc) {
+	e.set("PUT", f)
 }
 
-// Put satisfies Model.
-func (e EmptyModel) Put(r *http.Request) (interface{}, int) {
-	return e.handle("PUT", r)
+// Patch sets the model function for Get requests.
+func (e *Model) Patch(f ModelFunc) {
+	e.set("PATCH", f)
 }
 
-// Patch satisfies Model.
-func (e EmptyModel) Patch(r *http.Request) (interface{}, int) {
-	return e.handle("PATCH", r)
+// Delete sets the model function for Get requests.
+func (e *Model) Delete(f ModelFunc) {
+	e.set("DELETE", f)
 }
 
-// Delete satisfies Model.
-func (e EmptyModel) Delete(r *http.Request) (interface{}, int) {
-	return e.handle("DELETE", r)
-}
-
-// GetFunc sets the model function for Get requests.
-func (e *EmptyModel) GetFunc(f ModelFunc) {
-	e.setFunc("GET", f)
-}
-
-// PostFunc sets the model function for Get requests.
-func (e *EmptyModel) PostFunc(f ModelFunc) {
-	e.setFunc("POST", f)
-}
-
-// PutFunc sets the model function for Get requests.
-func (e *EmptyModel) PutFunc(f ModelFunc) {
-	e.setFunc("PUT", f)
-}
-
-// PatchFunc sets the model function for Get requests.
-func (e *EmptyModel) PatchFunc(f ModelFunc) {
-	e.setFunc("PATCH", f)
-}
-
-// DeleteFunc sets the model function for Get requests.
-func (e *EmptyModel) DeleteFunc(f ModelFunc) {
-	e.setFunc("DELETE", f)
-}
-
-func (e *EmptyModel) setFunc(method string, f ModelFunc) {
+func (e *Model) set(method string, f ModelFunc) {
 	if *e == nil {
-		*e = make(EmptyModel)
+		*e = make(Model)
 	}
 	(*e)[method] = f
 }
 
-func (e EmptyModel) handle(method string, r *http.Request) (interface{}, int) {
-	if modelFunc, ok := e[method]; ok {
+func (e Model) handle(r *http.Request) (interface{}, int) {
+	if modelFunc, ok := e[r.Method]; ok {
 		return modelFunc(r)
 	}
 	return nil, 0
-}
-
-func modelFunc(method string, model Model) ModelFunc {
-	var m ModelFunc
-	switch method {
-	case "GET":
-		m = model.Get
-	case "POST":
-		m = model.Post
-	case "PUT":
-		m = model.Put
-	case "PATCH":
-		m = model.Patch
-	case "DELETE":
-		m = model.Delete
-	}
-	return m
 }

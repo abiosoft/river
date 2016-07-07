@@ -48,19 +48,15 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	for subpath, model := range e.models {
 		fullPath := path.Join(p, subpath)
 		rv.r.HandleFunc(fullPath, func(w http.ResponseWriter, r *http.Request) {
-			mf := modelFunc(r.Method, model)
-			if mf == nil {
-				rv.notAllowed(w, r)
-				return
-			}
 
-			// render
-			data, status := mf(r)
+			// handle
+			data, status := model.handle(r)
 			if status == 0 {
 				rv.notAllowed(w, r)
 				return
 			}
 
+			// render
 			err := e.renderer(staticStatusRW(w, status), r, data)
 			if err != nil && rv.err != nil {
 				rv.err(w, r, err)
@@ -70,7 +66,7 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	return rv
 }
 
-// BeforeHandle executes before handler handles the request.
+// BeforeHandle executes before the request is handled.
 // The passed ResponseWriter to the HandlerFunc can only modify the headers
 // and has Write() and WriteHeader() invalidated.
 func (rv *River) BeforeHandle(f http.HandlerFunc) *River {
@@ -78,25 +74,27 @@ func (rv *River) BeforeHandle(f http.HandlerFunc) *River {
 	return rv
 }
 
-// BeforeWrite executes before handler writes to the ResponseWriter.
+// BeforeWrite executes before ResponseWriter is written to.
+// Useful for setting headers e.t.c.
 func (rv *River) BeforeWrite(f http.HandlerFunc) *River {
 	rv.beforeWrite = append(rv.beforeWrite, f)
 	return rv
 }
 
-// AfterHandle executes after handler has handled the request.
+// AfterHandle executes after the request has been handled.
 func (rv *River) AfterHandle(f http.HandlerFunc) *River {
 	rv.afterHandle = append(rv.afterHandle, f)
 	return rv
 }
 
-// Run starts Bracket as an http server.
+// Run starts River as an http server.
 func (rv *River) Run(addr string) error {
 	logger.Printf("Server started on %s", addr)
 	return http.ListenAndServe(addr, rv)
 }
 
 // Err registers f as error handler.
+// This is only executed if a Renderer returns an error.
 func (rv *River) Err(f ErrorFunc) *River {
 	rv.err = f
 	return rv
@@ -125,13 +123,6 @@ func (rv *River) afterHandleFuncs(w http.ResponseWriter, r *http.Request) {
 	for i := range rv.afterHandle {
 		rv.afterHandle[i](w, r)
 	}
-}
-
-// HandlerFunc is a function definition for Endpoint handlers.
-type HandlerFunc func(http.ResponseWriter, *http.Request) error
-
-func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h(w, r)
 }
 
 // ErrorFunc handles error that occurs during request handling.

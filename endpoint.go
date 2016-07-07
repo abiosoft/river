@@ -16,7 +16,8 @@ func NewEndpoint() *Endpoint {
 }
 
 // Use uses Model m at subpath.
-// Supports variable templates. e.g. /{category}/{id:[0-9]+}.
+// Supports variable templates. e.g. /{category}/{id:[0-9]+}
+// and accessible via river.Vars(r).
 func (e *Endpoint) Use(subpath string, m Model) *Endpoint {
 	e.models[subpath] = m
 	return e
