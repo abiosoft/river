@@ -7,23 +7,17 @@ import (
 )
 
 // Renderer is output renderer.
-type Renderer func(data interface{}, status int) HandlerFunc
+type Renderer func(w http.ResponseWriter, r *http.Request, data interface{}) error
 
 // JSONRenderer is a json renderer.
-var JSONRenderer Renderer = func(data interface{}, status int) HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		return json.NewEncoder(w).Encode(data)
-	}
+func JSONRenderer(w http.ResponseWriter, r *http.Request, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(data)
 }
 
 // PlainRenderer is plain text renderer.
-var PlainRenderer Renderer = func(data interface{}, status int) HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(status)
-		_, err := fmt.Fprint(w, data)
-		return err
-	}
+func PlainRenderer(w http.ResponseWriter, r *http.Request, data interface{}) error {
+	w.Header().Set("Content-Type", "text/plain")
+	_, err := fmt.Fprint(w, data)
+	return err
 }

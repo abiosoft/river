@@ -14,28 +14,33 @@ var (
 	logger = log.New(os.Stdout, "[River] ", 0)
 )
 
-// LogOutput sets the writer to use for logger.
+// LogOutput sets the output to use for logger.
 func LogOutput(w io.Writer) {
 	logger.SetOutput(w)
 }
 
 // River is a REST handler.
 type River struct {
-	r      *mux.Router
-	before []func(*http.Request)
-	after  []http.HandlerFunc
-	err    ErrorFunc
+	r            *mux.Router
+	beforeHandle []http.HandlerFunc
+	beforeWrite  []http.HandlerFunc
+	afterHandle  []http.HandlerFunc
+	err          ErrorFunc
+	notAllowed   http.HandlerFunc
 }
 
 // New creates a new River.
 func New() *River {
-	return &River{r: mux.NewRouter()}
+	return &River{
+		r:          mux.NewRouter(),
+		notAllowed: notAllowed,
+	}
 }
 
 func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rv.beforeFuncs(r)
-	rv.r.ServeHTTP(w, r)
-	rv.afterFuncs(w, r)
+	rv.beforeHandleFuncs(noWriteRW(w), r)
+	rv.r.ServeHTTP(beforeWriteRW(w, func() { rv.beforeWriteFuncs(w, r) }), r)
+	rv.afterHandleFuncs(w, r)
 }
 
 // Handle handles endpoint at path p.
@@ -43,19 +48,20 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	for subpath, model := range e.models {
 		fullPath := path.Join(p, subpath)
 		rv.r.HandleFunc(fullPath, func(w http.ResponseWriter, r *http.Request) {
-			vars := map[string]string{}
-			if m := new(mux.RouteMatch); rv.r.Match(r, m) {
-				vars = m.Vars
-			}
-
-			mFunc := modelFunc(r.Method, model)
-			if mFunc == nil {
-				notAllowed(w, r)
+			mf := modelFunc(r.Method, model)
+			if mf == nil {
+				rv.notAllowed(w, r)
 				return
 			}
 
 			// render
-			err := e.renderer(mFunc(r, vars))(w, r)
+			data, status := mf(r)
+			if status == 0 {
+				rv.notAllowed(w, r)
+				return
+			}
+
+			err := e.renderer(staticStatusRW(w, status), r, data)
 			if err != nil && rv.err != nil {
 				rv.err(w, r, err)
 			}
@@ -65,14 +71,22 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 }
 
 // BeforeHandle executes before handler handles the request.
-func (rv *River) BeforeHandle(f func(*http.Request)) *River {
-	rv.before = append(rv.before, f)
+// The passed ResponseWriter to the HandlerFunc can only modify the headers
+// and has Write() and WriteHeader() invalidated.
+func (rv *River) BeforeHandle(f http.HandlerFunc) *River {
+	rv.beforeHandle = append(rv.beforeHandle, f)
+	return rv
+}
+
+// BeforeWrite executes before handler writes to the ResponseWriter.
+func (rv *River) BeforeWrite(f http.HandlerFunc) *River {
+	rv.beforeWrite = append(rv.beforeWrite, f)
 	return rv
 }
 
 // AfterHandle executes after handler has handled the request.
 func (rv *River) AfterHandle(f http.HandlerFunc) *River {
-	rv.after = append(rv.after, f)
+	rv.afterHandle = append(rv.afterHandle, f)
 	return rv
 }
 
@@ -88,16 +102,28 @@ func (rv *River) Err(f ErrorFunc) *River {
 	return rv
 }
 
-func (rv *River) beforeFuncs(r *http.Request) *River {
-	for i := range rv.before {
-		rv.before[i](r)
-	}
+// NotAllowed replaces the default handler for methods not handled by
+// any endpoint with f.
+func (rv *River) NotAllowed(f http.HandlerFunc) *River {
+	rv.notAllowed = f
 	return rv
 }
 
-func (rv *River) afterFuncs(w http.ResponseWriter, r *http.Request) {
-	for i := range rv.after {
-		rv.after[i](w, r)
+func (rv *River) beforeHandleFuncs(w http.ResponseWriter, r *http.Request) {
+	for i := range rv.beforeHandle {
+		rv.beforeHandle[i](w, r)
+	}
+}
+
+func (rv *River) beforeWriteFuncs(w http.ResponseWriter, r *http.Request) {
+	for i := range rv.beforeWrite {
+		rv.beforeWrite[i](w, r)
+	}
+}
+
+func (rv *River) afterHandleFuncs(w http.ResponseWriter, r *http.Request) {
+	for i := range rv.afterHandle {
+		rv.afterHandle[i](w, r)
 	}
 }
 
@@ -115,6 +141,6 @@ func notAllowed(w http.ResponseWriter, r *http.Request) {
 	http.Error(
 		w,
 		http.StatusText(http.StatusMethodNotAllowed),
-		http.StatusNotImplemented,
+		http.StatusMethodNotAllowed,
 	)
 }
