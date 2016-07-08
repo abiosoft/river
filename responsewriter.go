@@ -20,6 +20,7 @@ func (r *customrw) Write(b []byte) (int, error) {
 	}
 	return r.write(b)
 }
+
 func (r *customrw) WriteHeader(status int) {
 	r.headerWritten = true
 	r.writeHeader(status)

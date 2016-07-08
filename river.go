@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -27,13 +28,15 @@ type River struct {
 	afterHandle  []http.HandlerFunc
 	err          ErrorFunc
 	notAllowed   http.HandlerFunc
+	handledPaths handledPaths
 }
 
 // New creates a new River.
 func New() *River {
 	return &River{
-		r:          mux.NewRouter(),
-		notAllowed: notAllowed,
+		r:            mux.NewRouter(),
+		notAllowed:   notAllowed,
+		handledPaths: make(map[string][]string),
 	}
 }
 
@@ -45,8 +48,14 @@ func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Handle handles endpoint at path p.
 func (rv *River) Handle(p string, e *Endpoint) *River {
+	rv.handle(p, e)
+	return rv
+}
+
+func (rv *River) handle(p string, e *Endpoint) {
 	for subpath, model := range e.models {
 		fullPath := path.Join(p, subpath)
+		rv.handledPaths[fullPath] = model.methods()
 		rv.r.HandleFunc(fullPath, func(w http.ResponseWriter, r *http.Request) {
 
 			// handle
@@ -63,7 +72,6 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 			}
 		})
 	}
-	return rv
 }
 
 // BeforeHandle executes before the request is handled.
@@ -90,6 +98,7 @@ func (rv *River) AfterHandle(f http.HandlerFunc) *River {
 // Run starts River as an http server.
 func (rv *River) Run(addr string) error {
 	logger.Printf("Server started on %s", addr)
+	rv.handledPaths.Dump()
 	return http.ListenAndServe(addr, rv)
 }
 
@@ -134,4 +143,16 @@ func notAllowed(w http.ResponseWriter, r *http.Request) {
 		http.StatusText(http.StatusMethodNotAllowed),
 		http.StatusMethodNotAllowed,
 	)
+}
+
+type handledPaths map[string][]string
+
+func (h handledPaths) Dump() {
+	logger.Println()
+	logger.Println("Routes")
+	logger.Println("-------")
+	for path, methods := range h {
+		logger.Printf("%s -> %s \n", path, strings.Join(methods, ", "))
+	}
+	logger.Println("-------")
 }

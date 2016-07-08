@@ -6,7 +6,7 @@ type Endpoint struct {
 	renderer Renderer
 }
 
-// NewEndpoint creates a new Endpoint with p as path prefix.
+// NewEndpoint creates a new Endpoint.
 // Renderer defaults to JSONRenderer.
 func NewEndpoint() *Endpoint {
 	return &Endpoint{

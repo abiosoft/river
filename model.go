@@ -22,40 +22,48 @@ type ModelFunc func(*http.Request) (data interface{}, status int)
 type Model map[string]ModelFunc
 
 // Get sets the model function for Get requests.
-func (e *Model) Get(f ModelFunc) {
-	e.set("GET", f)
+func (m *Model) Get(f ModelFunc) {
+	m.set("GET", f)
 }
 
 // Post sets the model function for Get requests.
-func (e *Model) Post(f ModelFunc) {
-	e.set("POST", f)
+func (m *Model) Post(f ModelFunc) {
+	m.set("POST", f)
 }
 
 // Put sets the model function for Get requests.
-func (e *Model) Put(f ModelFunc) {
-	e.set("PUT", f)
+func (m *Model) Put(f ModelFunc) {
+	m.set("PUT", f)
 }
 
 // Patch sets the model function for Get requests.
-func (e *Model) Patch(f ModelFunc) {
-	e.set("PATCH", f)
+func (m *Model) Patch(f ModelFunc) {
+	m.set("PATCH", f)
 }
 
 // Delete sets the model function for Get requests.
-func (e *Model) Delete(f ModelFunc) {
-	e.set("DELETE", f)
+func (m *Model) Delete(f ModelFunc) {
+	m.set("DELETE", f)
 }
 
-func (e *Model) set(method string, f ModelFunc) {
-	if *e == nil {
-		*e = make(Model)
+func (m *Model) set(method string, f ModelFunc) {
+	if *m == nil {
+		*m = make(Model)
 	}
-	(*e)[method] = f
+	(*m)[method] = f
 }
 
-func (e Model) handle(r *http.Request) (interface{}, int) {
-	if modelFunc, ok := e[r.Method]; ok {
+func (m Model) handle(r *http.Request) (interface{}, int) {
+	if modelFunc, ok := m[r.Method]; ok {
 		return modelFunc(r)
 	}
 	return nil, 0
+}
+
+func (m Model) methods() []string {
+	var methods []string
+	for method := range m {
+		methods = append(methods, method)
+	}
+	return methods
 }

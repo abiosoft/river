@@ -26,10 +26,25 @@ func main() {
 				"id":   v["id"],
 			}, 201
 		})
+		user.Delete(func(r *http.Request) (interface{}, int) {
+			return nil, 201
+		})
+		var people river.Model
+		people.Get(func(r *http.Request) (interface{}, int) {
+			v := river.Vars(r)
+			return map[string]interface{}{
+				"type": "People",
+				"name": v["name"],
+			}, 201
+		})
 		rv.Handle("/user", river.NewEndpoint().
-			Use("/{id}", user).
-			Use("/json", user).
-			Renderer(river.JSONRenderer),
+			Use("/{id}", user),
+		)
+		rv.Handle("/people", river.NewEndpoint().
+			Use("/{name}", people),
+		)
+		rv.Handle("/people", river.NewEndpoint().
+			Use("/", people),
 		)
 	}
 
