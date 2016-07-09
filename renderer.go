@@ -3,21 +3,21 @@ package river
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 )
 
-// Renderer is output renderer.
-type Renderer func(w http.ResponseWriter, r *http.Request, data interface{}) error
+// Renderer renders data in a specified format.
+// Render should set Content-Type accordingly.
+type Renderer func(c *Context, data interface{}) error
 
-// JSONRenderer is a json renderer.
-func JSONRenderer(w http.ResponseWriter, r *http.Request, data interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(data)
+// JSONRenderer is json renderer.
+func JSONRenderer(c *Context, data interface{}) error {
+	c.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(c).Encode(data)
 }
 
 // PlainRenderer is plain text renderer.
-func PlainRenderer(w http.ResponseWriter, r *http.Request, data interface{}) error {
-	w.Header().Set("Content-Type", "text/plain")
-	_, err := fmt.Fprint(w, data)
+func PlainRenderer(c *Context, data interface{}) error {
+	c.Header().Set("Content-Type", "text/plain")
+	_, err := fmt.Fprint(c, data)
 	return err
 }
