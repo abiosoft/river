@@ -2,8 +2,10 @@ package river
 
 // Endpoint is a REST endpoint.
 type Endpoint struct {
-	handlers map[string]endpointFuncs
-	renderer Renderer
+	handlers    map[string]endpointFuncs
+	middlewares []Handler
+	renderer    Renderer
+	Chain
 }
 
 // NewEndpoint creates a new Endpoint.
@@ -21,59 +23,48 @@ func (e *Endpoint) Renderer(r Renderer) *Endpoint {
 	return e
 }
 
-// Handler is request handler for endpoints and middlewares.
-// The first middleware to write a response stops both
-// middleware chain and the request from reaching the endpoint.
-// This can be done either by context.Write or context.Render.
-// Otherwise, every middleware will be called in order in which they are
-// added.
-// Endpoints handlers are called after all middleware.
-type Handler func(*Context)
-
-// Get sets the model function for Get requests.
-func (e *Endpoint) Get(p string, f Handler) *Endpoint {
-	e.set(p, "GET", f)
+// Get sets the function for Get requests.
+func (e *Endpoint) Get(p string, h Handler) *Endpoint {
+	e.set(p, "GET", h)
 	return e
 }
 
-// Post sets the model function for Post requests.
-func (e *Endpoint) Post(p string, f Handler) *Endpoint {
-	e.set(p, "POST", f)
+// Post sets the function for Post requests.
+func (e *Endpoint) Post(p string, h Handler) *Endpoint {
+	e.set(p, "POST", h)
 	return e
 }
 
-// Put sets the model function for Put requests.
-func (e *Endpoint) Put(p string, f Handler) *Endpoint {
-	e.set(p, "PUT", f)
+// Put sets the function for Put requests.
+func (e *Endpoint) Put(p string, h Handler) *Endpoint {
+	e.set(p, "PUT", h)
 	return e
 }
 
-// Patch sets the model function for Patch requests.
-func (e *Endpoint) Patch(p string, f Handler) *Endpoint {
-	e.set(p, "PATCH", f)
+// Patch sets the function for Patch requests.
+func (e *Endpoint) Patch(p string, h Handler) *Endpoint {
+	e.set(p, "PATCH", h)
 	return e
 }
 
-// Delete sets the model function for Delete requests.
-func (e *Endpoint) Delete(p string, f Handler) *Endpoint {
-	e.set(p, "DELETE", f)
+// Delete sets the function for Delete requests.
+func (e *Endpoint) Delete(p string, h Handler) *Endpoint {
+	e.set(p, "DELETE", h)
 	return e
 }
 
-// Options sets the model function for Options requests.
-func (e *Endpoint) Options(p string, f Handler) *Endpoint {
-	e.set(p, "OPTIONS", f)
+// Options sets the function for Options requests.
+func (e *Endpoint) Options(p string, h Handler) *Endpoint {
+	e.set(p, "OPTIONS", h)
 	return e
 }
 
-func (e *Endpoint) set(subpath string, method string, f Handler) {
+func (e *Endpoint) set(subpath string, method string, h Handler) {
 	if e.handlers[subpath] == nil {
 		e.handlers[subpath] = make(endpointFuncs)
 	}
-	e.handlers[subpath][method] = f
+	e.handlers[subpath][method] = h
 }
 
 // endpointFuncs maps request method to EndpointFunc.
 type endpointFuncs map[string]Handler
-
-// runtime.FuncForPC(reflect.ValueOf(a).Pointer()).Name()

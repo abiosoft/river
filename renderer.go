@@ -5,8 +5,12 @@ import (
 	"fmt"
 )
 
+// M is a convenience wrapper for map[string]interface{}.
+//  M{"status": "success, "data": M{"id": 1, "type": "complext"}}
+type M map[string]interface{}
+
 // Renderer renders data in a specified format.
-// Render should set Content-Type accordingly.
+// Renderer should set Content-Type accordingly.
 type Renderer func(c *Context, data interface{}) error
 
 // JSONRenderer is json renderer.

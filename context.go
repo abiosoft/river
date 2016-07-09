@@ -11,23 +11,37 @@ import (
 var errNoRenderer = errors.New("Renderer is nil")
 
 // Context is a request scope context.
-// Context implements http.ResponseWriter and http.Request is embedded.
+// Context implements http.ResponseWriter and embeds http.Request.
 // It can be adapted for use in an http.Handler e.g.
 //  handler.ServeHTTP(c, c.Request)
 type Context struct {
 	*http.Request
-	rw              http.ResponseWriter
-	params          httprouter.Params
-	values          map[string]interface{}
-	renderer        Renderer
-	responseWritten bool
-	statusWritten   bool
+	rw          http.ResponseWriter
+	params      httprouter.Params
+	values      map[string]interface{}
+	renderer    Renderer
+	middlewares []Handler
 }
 
 // Param returns URI parameters. If key is not found,
 // empty string is returned.
+// Params are set with :key in the handle path.
+// e.g. /:category/:id
 func (c *Context) Param(key string) string {
 	return c.params.ByName(key)
+}
+
+// Next calls the next handler in the middleware chain.
+// A middleware must call Next, otherwise the request stops
+// at the middleware.
+// Next has no effect if called in an endpoint handler.
+func (c *Context) Next() {
+	if len(c.middlewares) < 1 {
+		return
+	}
+	current := c.middlewares[0]
+	c.middlewares = c.middlewares[1:]
+	current(c)
 }
 
 // Header returns the header map that will be sent by
@@ -46,10 +60,6 @@ func (c *Context) Header() http.Header {
 // Content-Type line, Write adds a Content-Type set to the result of passing
 // the initial 512 bytes of written data to DetectContentType.
 func (c *Context) Write(b []byte) (int, error) {
-	if !c.statusWritten {
-		c.WriteHeader(http.StatusOK)
-	}
-	c.responseWritten = true
 	return c.rw.Write(b)
 }
 
@@ -59,7 +69,6 @@ func (c *Context) Write(b []byte) (int, error) {
 // Thus explicit calls to WriteHeader are mainly used to
 // send error codes.
 func (c *Context) WriteHeader(status int) {
-	c.statusWritten = true
 	c.rw.WriteHeader(status)
 }
 
@@ -77,7 +86,8 @@ func (c *Context) Set(key string, value interface{}) {
 	c.values[key] = value
 }
 
-// Render renders data using the current endpoint Renderer.
+// Render renders data using the current endpoint's renderer.
+// status is HTTP status code to respond with.
 func (c *Context) Render(data interface{}, status int) error {
 	if c.renderer == nil {
 		return errNoRenderer

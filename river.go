@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	logger = log.New(os.Stdout, "[River] ", 0)
+	logger = log.New(os.Stdout, "[River] ", log.Ldate|log.Ltime)
 )
 
 // LogOutput sets the output to use for logger.
@@ -19,22 +19,22 @@ func LogOutput(w io.Writer) {
 	logger.SetOutput(w)
 }
 
-// River is a REST handler.
+// River is a REST server handler and toolkit.
 type River struct {
-	r           *httprouter.Router
-	endpoints   map[string]*Endpoint
-	middlewares []Handler
-	after       []Handler
-	notAllowed  Handler
+	r *httprouter.Router
+	Chain
+	verbose
 }
 
 // New creates a new River.
-func New() *River {
-	return &River{
-		r:          httprouter.New(),
-		notAllowed: notAllowed,
-		endpoints:  make(map[string]*Endpoint),
-	}
+// Optional params middlewares are the middlewares to initiate with.
+// Middlewares can also be added with river.Use* methods.
+func New(middlewares ...Handler) *River {
+	r := httprouter.New()
+	r.HandleMethodNotAllowed = true
+	r.HandleOPTIONS = true
+	r.RedirectTrailingSlash = true
+	return &River{r: r, Chain: middlewares}
 }
 
 func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -47,116 +47,46 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	return rv
 }
 
-func (rv *River) routerHandle(handler Handler, renderer Renderer) httprouter.Handle {
+func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		// create request context
 		c := &Context{
-			rw:      w,
-			Request: r,
-			params:  p,
+			rw:          w,
+			Request:     r,
+			params:      p,
+			renderer:    e.renderer,
+			middlewares: append(rv.Chain, append(e.Chain, handler)...),
 		}
-		// set renderer
-		c.renderer = renderer
-
-		// run middlewares
-		rv.runMiddlewares(c)
-
-		// return if response has been written
-		if c.responseWritten {
-			return
-		}
-
-		// handle request
-		handler(c)
-
-		// run after functions
-		rv.afterFuncs(c)
+		c.Next()
 	}
 }
 
 func (rv *River) handle(p string, e *Endpoint) {
 	for subpath := range e.handlers {
 		fullPath := path.Join(p, subpath)
-		rv.endpoints[fullPath] = e
 		for method, handler := range e.handlers[subpath] {
-			rv.r.Handle(method, fullPath, rv.routerHandle(handler, e.renderer))
+			rv.r.Handle(method, fullPath, rv.routerHandle(handler, e))
+			rv.handledPaths.add(method, fullPath, handler)
 		}
 	}
-}
-
-// Use adds middlewares to the middleware chain.
-func (rv *River) Use(middlewares ...Handler) *River {
-	rv.middlewares = append(rv.middlewares, middlewares...)
-	return rv
-}
-
-// UseHandler adds any http.Handler as middleware to the middleware chain.
-func (rv *River) UseHandler(middlewares ...http.Handler) *River {
-	for i := range middlewares {
-		rv.Use(toHandler(middlewares[i]))
-	}
-	return rv
-}
-
-// After executes after the request has been responded to.
-// Useful for logging e.t.c.
-func (rv *River) After(h Handler) *River {
-	rv.after = append(rv.after, h)
-	return rv
 }
 
 // Run starts River as an http server.
 func (rv *River) Run(addr string) error {
 	logger.Printf("Server started on %s", addr)
+	rv.dump()
 	return http.ListenAndServe(addr, rv)
 }
 
 // NotAllowed replaces the default handler for methods not handled by
-// any endpoint with f.
-func (rv *River) NotAllowed(f Handler) *River {
-	rv.notAllowed = f
+// any endpoint with h.
+func (rv *River) NotAllowed(h Handler) *River {
+	rv.r.MethodNotAllowed = handlerToHTTPHandler(h)
 	return rv
 }
 
-func (rv *River) runMiddlewares(c *Context) {
-	for i := range rv.middlewares {
-		rv.middlewares[i](c)
-		// stop middleware chain if
-		// response is written.
-		if c.responseWritten {
-			return
-		}
-	}
+// NotFound replaces the default handler for request paths without
+// any endpoint.
+func (rv *River) NotFound(h Handler) *River {
+	rv.r.NotFound = handlerToHTTPHandler(h)
+	return rv
 }
-
-func (rv *River) afterFuncs(c *Context) {
-	for i := range rv.after {
-		rv.after[i](c)
-	}
-}
-
-func toHandler(h http.Handler) Handler {
-	return func(c *Context) {
-		h.ServeHTTP(c, c.Request)
-	}
-}
-
-func notAllowed(c *Context) {
-	http.Error(
-		c,
-		http.StatusText(http.StatusMethodNotAllowed),
-		http.StatusMethodNotAllowed,
-	)
-}
-
-// type handledPaths map[string][]string
-
-// func (h handledPaths) Dump() {
-// 	logger.Println()
-// 	logger.Println("Routes")
-// 	logger.Println("-------")
-// 	for path, methods := range h {
-// 		logger.Printf("%s -> %s \n", path, strings.Join(methods, ", "))
-// 	}
-// 	logger.Println("-------")
-// }
