@@ -6,12 +6,14 @@ River is a simple and lightweight REST server.
 ```go
 rv := river.New()
 ```
+
 * Use middlewares
-```
+```go
 rv.Use(river.Logger()) 
 ```
+
 * Create endpoints
-```
+```go
 e := river.NewEndpoint(). 
     Get("/:id", func(c *river.Context){
         id := c.Param("id")
@@ -26,12 +28,14 @@ e := river.NewEndpoint().
 
 e.Use(MyMiddleware) // endpoint specific middleware
 ```
+
 * Handle endpoints
-```
+```go
 rv.Handle("/user", e) 
 ```
+
 * Run
-```
+```go
 rv.Run(":8080")
 ```
 
@@ -43,37 +47,43 @@ rv.Run(":8080")
 
 ### Endpoint
 Create
-```
+```go
 e := river.NewEndpoint()
 ```
+
 Request Handler
-```
+```go
 func (c *river.Context)
 ```
-Handle Requests.
-```
+
+Handle Requests
+```go
 e.Get(...).Post(...).Put(...) // method chaining
 e.Handle(method, ...) // for custom request methods
 ```
 
 ### Middleware
 River comes with `river.Logger()` and `river.Recovery()` for logging and panic recovery.  
-```
+
+```go
 rv.Use(Middleware) // global
 e.Use(Middleware)  // endpoint
 ```
+
 Middleware determines if request should continue. 
-```
+```go
 func (c *river.Context){
     ... // do something before
     c.Next()
     ... // do something after
 }
 ```
+
 Any `http.Handler` can be a middleware.
-```
+```go
 rv.UseHandler(handler)
 ```
+
 ### Renderer
 With River, you can change responses without changing a line of code in your endpoints.
 Renderer takes in data from endpoints and writes it to the ResponseWriter.
@@ -81,7 +91,7 @@ Renderer takes in data from endpoints and writes it to the ResponseWriter.
 `c.Render(...)` renders using the configured Renderer. `JSONRenderer` is one of the available renderers. 
 
 Creating a Renderer. e.g. transform response to JSend format before sending as JSON.
-```
+```go
 func MyRenderer (c *river.Context, data interface{}) error {
     resp := river.M{"status" : "success", "data" : data}
     if _, ok := data.(error); ok {
@@ -92,16 +102,19 @@ func MyRenderer (c *river.Context, data interface{}) error {
     return JSONRenderer(c, resp)
 }
 ```
+
 Setting a Renderer.
-```
+```go
 rv.Renderer(MyRenderer) // global
 e.Renderer(MyRenderer)  // endpoint
 ```
+
 ### Custom server.
 River is an `http.Handler`. You can add it manually without `Run()`.
-```
+```go
 http.ListenAndServe(":8080", rv)
 ```
+
 ### Router
 River uses [httprouter](https://github.com/julienschmidt/httprouter) underneath.
 
