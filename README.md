@@ -7,12 +7,12 @@ River is a simple and lightweight REST server.
 rv := river.New()
 ```
 
-* Use middlewares
+Use middlewares
 ```go
 rv.Use(river.Logger()) 
 ```
 
-* Create endpoints
+Create endpoints
 ```go
 e := river.NewEndpoint(). 
     Get("/:id", func(c *river.Context){
@@ -29,12 +29,12 @@ e := river.NewEndpoint().
 e.Use(MyMiddleware) // endpoint specific middleware
 ```
 
-* Handle endpoints
+Handle endpoints
 ```go
 rv.Handle("/user", e) 
 ```
 
-* Run
+Run
 ```go
 rv.Run(":8080")
 ```
@@ -123,7 +123,7 @@ River uses [httprouter](https://github.com/julienschmidt/httprouter) underneath.
 * Send in a PR.
 
 ### I wrote a middleware
-Thanks, create a PR to add it to this README. 
+Thanks, I will appreciate if you create a PR to add it to this README. 
 
 ### Why the name "River", a "REST" server ? Can you REST on a River ?
 Well, yes. You only need to know how to swim or wear a life jacket. 
