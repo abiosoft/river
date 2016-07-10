@@ -1,14 +1,11 @@
 package river
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
-
-var errNoRenderer = errors.New("Renderer is nil")
 
 // Context is a request scope context.
 // Context implements http.ResponseWriter and embeds http.Request.
@@ -19,18 +16,34 @@ type Context struct {
 	rw            http.ResponseWriter
 	params        httprouter.Params
 	values        map[string]interface{}
-	renderer      Renderer
+	eRenderer     Renderer
+	gRenderer     Renderer
 	middlewares   []Handler
 	headerWritten bool
 	status        int
 }
 
-// Param returns URI parameters. If key is not found,
+// Param returns URL parameters. If key is not found,
 // empty string is returned.
 // Params are set with :key in the handle path.
 // e.g. /:category/:id
 func (c *Context) Param(key string) string {
 	return c.params.ByName(key)
+}
+
+// Query returns URL query parameters. If key not found,
+// empty string is returned.
+func (c *Context) Query(key string) string {
+	return c.URL.Query().Get(key)
+}
+
+// Redirect performs HTTP redirect to url with code as redirect code.
+// code must be 3xx, otherwise http.StatusFound (302) will be used.
+func (c *Context) Redirect(url string, code int) {
+	if code < 300 || code > 399 {
+		code = http.StatusFound
+	}
+	http.Redirect(c, c.Request, url, code)
 }
 
 // Next calls the next handler in the middleware chain.
@@ -93,15 +106,18 @@ func (c *Context) Set(key string, value interface{}) {
 	c.values[key] = value
 }
 
-// Render renders data using the current endpoint's renderer (if any) or
-// otherwise uses PlainRenderer.
+// Render renders data using the current endpoint's renderer (if any)
+// or global renderer (if any) or PlainRenderer; in that preference order.
 // status is HTTP status code to respond with.
 func (c *Context) Render(data interface{}, status int) error {
 	c.WriteHeader(status)
-	if c.renderer == nil {
-		return PlainRenderer(c, data)
+	if c.eRenderer != nil {
+		return c.eRenderer(c, data)
 	}
-	return c.renderer(c, data)
+	if c.gRenderer != nil {
+		return c.gRenderer(c, data)
+	}
+	return PlainRenderer(c, data)
 }
 
 // RenderEmpty renders status text for status as body.
@@ -117,24 +133,24 @@ func (c *Context) Status() int {
 	return c.status
 }
 
-// net/context / Go 1.7 Request.Context
+/* net/context / Go 1.7 Request.Context */
 
-// Deadline satisfies Context.
+// Deadline satisfies net/context / Go 1.7 Request.Context
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-// Done satisfies Context.
+// Done satisfies net/context / Go 1.7 Request.Context.
 func (c *Context) Done() <-chan struct{} {
 	return nil
 }
 
-// Err satisfies Context.
+// Err satisfies net/context / Go 1.7 Request.Context.
 func (c *Context) Err() error {
 	return nil
 }
 
-// Value satisfies Context.
+// Value satisfies net/context / Go 1.7 Request.Context.
 func (c *Context) Value(key interface{}) interface{} {
 	if key == 0 {
 		return c.Request

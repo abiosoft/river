@@ -30,13 +30,15 @@ func toHandler(h http.Handler) Handler {
 	}
 }
 
-// Logger logs requests in a colourful way.
+// Logger is a middleware that logs requests in a colourful way.
 // Useful for development.
 func Logger() Handler {
 	return func(c *Context) {
 		start := time.Now()
 
 		c.Next()
+
+		duration := time.Since(start)
 
 		bg := color.BgBlack
 		switch {
@@ -51,8 +53,6 @@ func Logger() Handler {
 		}
 
 		paint := color.New(bg, color.FgWhite, color.Bold).SprintFunc()
-
-		duration := time.Since(start)
 		status := paint(fmt.Sprintf("  %d  ", c.Status()))
 
 		fmt.Printf("%s %v %s %15v %-4s %s\n",

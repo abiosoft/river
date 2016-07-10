@@ -12,18 +12,10 @@ type Endpoint struct {
 }
 
 // NewEndpoint creates a new Endpoint.
-// Renderer defaults to JSONRenderer.
 func NewEndpoint() *Endpoint {
 	return &Endpoint{
 		handlers: make(map[string]endpointFuncs),
-		renderer: JSONRenderer,
 	}
-}
-
-// Renderer sets the output render for Endpoint.
-func (e *Endpoint) Renderer(r Renderer) *Endpoint {
-	e.renderer = r
-	return e
 }
 
 // Get sets the function for Get requests.
@@ -59,6 +51,18 @@ func (e *Endpoint) Delete(p string, h Handler) *Endpoint {
 // Options sets the function for Options requests.
 func (e *Endpoint) Options(p string, h Handler) *Endpoint {
 	e.set(p, "OPTIONS", h)
+	return e
+}
+
+// Renderer sets the output renderer for endpoint.
+func (e *Endpoint) Renderer(r Renderer) *Endpoint {
+	e.renderer = r
+	return e
+}
+
+// Handle sets the function for a custom requests.
+func (e *Endpoint) Handle(requestMethod, p string, h Handler) *Endpoint {
+	e.set(p, requestMethod, h)
 	return e
 }
 

@@ -23,6 +23,7 @@ func LogOutput(w io.Writer) {
 type River struct {
 	r *httprouter.Router
 	HandlerChain
+	renderer Renderer
 	verbose
 }
 
@@ -57,7 +58,8 @@ func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
 			rw:          w,
 			Request:     r,
 			params:      p,
-			renderer:    e.renderer,
+			eRenderer:   e.renderer,
+			gRenderer:   rv.renderer,
 			middlewares: append(rv.HandlerChain, append(e.HandlerChain, handler)...),
 		}
 		c.Next()
@@ -70,6 +72,7 @@ func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
 			rw:          w,
 			Request:     r,
 			middlewares: append(rv.HandlerChain, handler),
+			gRenderer:   rv.renderer,
 		}
 		c.Next()
 	}
@@ -90,6 +93,13 @@ func (rv *River) Run(addr string) error {
 	logger.Printf("Server started on %s", addr)
 	rv.dump()
 	return http.ListenAndServe(addr, rv)
+}
+
+// Renderer sets output renderer.
+// Endpoint specific Renderer overrules this.
+func (rv *River) Renderer(r Renderer) *River {
+	rv.renderer = r
+	return rv
 }
 
 // NotAllowed replaces the default handler for methods not handled by
