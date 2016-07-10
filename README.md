@@ -43,7 +43,7 @@ rv.Run(":8080")
 * An endpoint is a REST endpoint with supported methods.
 * All endpoints are handled by a River instance.
 * Outputs are rendered via a preset or custom Renderer.
-* Middleware and Renderers can be global or endpoint specific.
+* Middleware and Renderers can be used globally or by a specific endpoint.
 
 ### Endpoint
 Create
