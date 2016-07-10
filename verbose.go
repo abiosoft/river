@@ -14,13 +14,9 @@ type verbose struct {
 func (v verbose) dump() {
 	var b bytes.Buffer
 	fmt.Fprintln(&b)
-	fmt.Fprintln(&b)
-	fmt.Fprintln(&b, "Endpoints")
-	fmt.Fprintln(&b, "---------")
 	for _, hp := range v.handledPaths {
-		fmt.Fprintf(&b, "%s \t %s -> %s\n", hp.method, hp.path, nameOf(hp.handler))
+		fmt.Fprintf(&b, "%-4s  %-25s -> %s\n", hp.method, hp.path, nameOf(hp.handler))
 	}
-	fmt.Fprintln(&b, "---------")
 	logger.Println(b.String())
 }
 

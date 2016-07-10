@@ -2,37 +2,33 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/abiosoft/river"
 )
 
 func main() {
-	rv := river.New()
+	rv := river.New(river.Logger())
 	{
 		rv.Handle("/user", river.NewEndpoint().
 			Get("/:id", func(c *river.Context) {
+				c.Render(c.Param("id"), 200)
+			}).
+			Post("/:id", func(c *river.Context) {
 				c.Render(c.Param("id"), 201)
 			}).
 			Get("/", func(c *river.Context) {
 				c.Render("It works", 200)
 			}).
-			Renderer(river.PlainRenderer),
+			Get("/:id/:name", func(c *river.Context) {
+				time.Sleep(time.Second * 3)
+				panic("whatever")
+			}).
+			Renderer(river.JSONRenderer),
 		)
 	}
 	{
-		rv.Use(func(c *river.Context) {
-			defer func() {
-				if err := recover(); err != nil {
-					c.Render(
-						river.M{
-							"status":  "error",
-							"message": err,
-						}, 500,
-					)
-				}
-			}()
-			c.Next()
-		})
+		rv.Use(river.Recovery(nil))
 	}
 	{
 		e := river.NewEndpoint()

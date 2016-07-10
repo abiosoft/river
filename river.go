@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	logger = log.New(os.Stdout, "[River] ", log.Ldate|log.Ltime)
+	logger = log.New(os.Stdout, "[River] ", 0)
 )
 
 // LogOutput sets the output to use for logger.
@@ -22,7 +22,7 @@ func LogOutput(w io.Writer) {
 // River is a REST server handler and toolkit.
 type River struct {
 	r *httprouter.Router
-	Chain
+	HandlerChain
 	verbose
 }
 
@@ -34,7 +34,10 @@ func New(middlewares ...Handler) *River {
 	r.HandleMethodNotAllowed = true
 	r.HandleOPTIONS = true
 	r.RedirectTrailingSlash = true
-	return &River{r: r, Chain: middlewares}
+
+	return (&River{r: r, HandlerChain: middlewares}).
+		NotFound(notFound).
+		NotAllowed(notAllowed)
 }
 
 func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +45,7 @@ func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle handles endpoint at path p.
+// This should only be called after Endpoint requests have been handled.
 func (rv *River) Handle(p string, e *Endpoint) *River {
 	rv.handle(p, e)
 	return rv
@@ -54,7 +58,18 @@ func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
 			Request:     r,
 			params:      p,
 			renderer:    e.renderer,
-			middlewares: append(rv.Chain, append(e.Chain, handler)...),
+			middlewares: append(rv.HandlerChain, append(e.HandlerChain, handler)...),
+		}
+		c.Next()
+	}
+}
+
+func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := &Context{
+			rw:          w,
+			Request:     r,
+			middlewares: append(rv.HandlerChain, handler),
 		}
 		c.Next()
 	}
@@ -80,13 +95,21 @@ func (rv *River) Run(addr string) error {
 // NotAllowed replaces the default handler for methods not handled by
 // any endpoint with h.
 func (rv *River) NotAllowed(h Handler) *River {
-	rv.r.MethodNotAllowed = handlerToHTTPHandler(h)
+	rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(h)
 	return rv
 }
 
 // NotFound replaces the default handler for request paths without
 // any endpoint.
 func (rv *River) NotFound(h Handler) *River {
-	rv.r.NotFound = handlerToHTTPHandler(h)
+	rv.r.NotFound = rv.routerHandleNoEndpoint(h)
 	return rv
+}
+
+func notFound(c *Context) {
+	c.RenderEmpty(http.StatusNotFound)
+}
+
+func notAllowed(c *Context) {
+	c.RenderEmpty(http.StatusMethodNotAllowed)
 }

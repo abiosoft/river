@@ -1,54 +1,82 @@
 package river
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+	"time"
 
-// Handler is request handler for endpoints and middlewares.
-type Handler func(*Context)
+	"github.com/fatih/color"
+)
 
-// Chain is middleware chain.
-type Chain []Handler
+// HandlerChain is middleware chain.
+type HandlerChain []Handler
 
 // Use adds middlewares to the middleware chain.
-func (c *Chain) Use(middlewares ...Handler) {
+func (c *HandlerChain) Use(middlewares ...Handler) {
 	*c = append(*c, middlewares...)
 }
 
 // UseHandler adds any http.Handler as middleware to the middleware chain.
-func (c *Chain) UseHandler(middlewares ...http.Handler) {
+func (c *HandlerChain) UseHandler(middlewares ...http.Handler) {
 	for i := range middlewares {
-		c.Use(httpHandlerToHandler(middlewares[i]))
+		c.Use(toHandler(middlewares[i]))
 	}
 }
 
-// UseHandlerNext adds any func(rw, r, next) as a middleware to the middleware
-// chain. This adds compatibility to generic middlewares.
-func (c *Chain) UseHandlerNext(middlewares ...func(w http.ResponseWriter, r *http.Request, next http.Handler)) {
-	for i := range middlewares {
-		c.Use(handlerNextToHandler(middlewares[i]))
-	}
-}
-
-func httpHandlerToHandler(h http.Handler) Handler {
+func toHandler(h http.Handler) Handler {
 	return func(c *Context) {
 		h.ServeHTTP(c, c.Request)
 		c.Next()
 	}
 }
 
-func handlerNextToHandler(handlerFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)) Handler {
+// Logger logs requests in a colourful way.
+// Useful for development.
+func Logger() Handler {
 	return func(c *Context) {
-		handlerFunc(
-			c,
-			c.Request,
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				c.Next()
-			}),
+		start := time.Now()
+
+		c.Next()
+
+		bg := color.BgBlack
+		switch {
+		case c.Status() >= 200 && c.Status() < 300:
+			bg = color.BgGreen
+		case c.Status() >= 300 && c.Status() < 400:
+			bg = color.BgBlue
+		case c.Status() >= 400 && c.Status() < 500:
+			bg = color.BgYellow
+		case c.Status() >= 500 && c.Status() < 600:
+			bg = color.BgRed
+		}
+
+		paint := color.New(bg, color.FgWhite, color.Bold).SprintFunc()
+
+		duration := time.Since(start)
+		status := paint(fmt.Sprintf("  %d  ", c.Status()))
+
+		fmt.Printf("%s %v %s %15v %-4s %s\n",
+			logger.Prefix(),
+			time.Now().Format("2006-01-02 15:04:05"),
+			status, duration, c.Method, c.URL.Path,
 		)
+
 	}
 }
 
-func handlerToHTTPHandler(h Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		h(&Context{rw: w, Request: r, renderer: JSONRenderer})
+// Recovery creates a panic recovery middleware. If handler is not nil,
+// it calls handler after recovery
+func Recovery(handler func(*Context, interface{})) Handler {
+	return func(c *Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				if handler != nil {
+					handler(c, err)
+				} else {
+					c.Render(err, http.StatusInternalServerError)
+				}
+			}
+		}()
+		c.Next()
 	}
 }

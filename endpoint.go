@@ -1,11 +1,14 @@
 package river
 
+// Handler is request handler for endpoints and middlewares.
+type Handler func(*Context)
+
 // Endpoint is a REST endpoint.
 type Endpoint struct {
 	handlers    map[string]endpointFuncs
 	middlewares []Handler
 	renderer    Renderer
-	Chain
+	HandlerChain
 }
 
 // NewEndpoint creates a new Endpoint.

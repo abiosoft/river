@@ -16,11 +16,13 @@ var errNoRenderer = errors.New("Renderer is nil")
 //  handler.ServeHTTP(c, c.Request)
 type Context struct {
 	*http.Request
-	rw          http.ResponseWriter
-	params      httprouter.Params
-	values      map[string]interface{}
-	renderer    Renderer
-	middlewares []Handler
+	rw            http.ResponseWriter
+	params        httprouter.Params
+	values        map[string]interface{}
+	renderer      Renderer
+	middlewares   []Handler
+	headerWritten bool
+	status        int
 }
 
 // Param returns URI parameters. If key is not found,
@@ -60,6 +62,9 @@ func (c *Context) Header() http.Header {
 // Content-Type line, Write adds a Content-Type set to the result of passing
 // the initial 512 bytes of written data to DetectContentType.
 func (c *Context) Write(b []byte) (int, error) {
+	if !c.headerWritten {
+		c.WriteHeader(http.StatusOK)
+	}
 	return c.rw.Write(b)
 }
 
@@ -69,6 +74,8 @@ func (c *Context) Write(b []byte) (int, error) {
 // Thus explicit calls to WriteHeader are mainly used to
 // send error codes.
 func (c *Context) WriteHeader(status int) {
+	c.status = status
+	c.headerWritten = true
 	c.rw.WriteHeader(status)
 }
 
@@ -86,14 +93,28 @@ func (c *Context) Set(key string, value interface{}) {
 	c.values[key] = value
 }
 
-// Render renders data using the current endpoint's renderer.
+// Render renders data using the current endpoint's renderer (if any) or
+// otherwise uses PlainRenderer.
 // status is HTTP status code to respond with.
 func (c *Context) Render(data interface{}, status int) error {
-	if c.renderer == nil {
-		return errNoRenderer
-	}
 	c.WriteHeader(status)
+	if c.renderer == nil {
+		return PlainRenderer(c, data)
+	}
 	return c.renderer(c, data)
+}
+
+// RenderEmpty renders status text for status as body.
+// status is HTTP status code to respond with.
+func (c *Context) RenderEmpty(status int) error {
+	c.WriteHeader(status)
+	return PlainRenderer(c, http.StatusText(status))
+}
+
+// Status returns the response status code. This returns 0 unless response
+// has been written.
+func (c *Context) Status() int {
+	return c.status
 }
 
 // net/context / Go 1.7 Request.Context
