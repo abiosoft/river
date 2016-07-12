@@ -51,7 +51,7 @@ Basic flow
 Request -> Middlewares -> Endpoint -> Renderer
 ```
 
-Full flow.
+Full flow
 ```
                     Request
                        |
@@ -140,7 +140,7 @@ rv.Renderer(MyRenderer) // global
 e.Renderer(MyRenderer)  // endpoint
 ```
 
-### Custom server.
+### Custom server
 River is an `http.Handler`. You can do without `Run()`.
 ```go
 http.ListenAndServe(":8080", rv)

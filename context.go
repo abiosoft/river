@@ -16,8 +16,7 @@ type Context struct {
 	rw            http.ResponseWriter
 	params        httprouter.Params
 	values        map[string]interface{}
-	eRenderer     Renderer
-	gRenderer     Renderer
+	renderer      Renderer
 	middlewares   []Handler
 	headerWritten bool
 	status        int
@@ -111,13 +110,7 @@ func (c *Context) Set(key string, value interface{}) {
 // status is HTTP status code to respond with.
 func (c *Context) Render(status int, data interface{}) error {
 	c.WriteHeader(status)
-	if c.eRenderer != nil {
-		return c.eRenderer(c, data)
-	}
-	if c.gRenderer != nil {
-		return c.gRenderer(c, data)
-	}
-	return PlainRenderer(c, data)
+	return c.renderer(c, data)
 }
 
 // RenderEmpty renders status text for status as body.

@@ -11,7 +11,8 @@ type verbose struct {
 	handledPaths handledPaths
 }
 
-func (v verbose) dump() {
+// Dump dumps all endpoints that are being handled to the log.
+func (v verbose) Dump() {
 	var b bytes.Buffer
 	fmt.Fprintln(&b)
 	fmt.Fprintln(&b, "Endpoints")

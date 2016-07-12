@@ -22,7 +22,7 @@ func LogOutput(w io.Writer) {
 // River is a REST server handler and toolkit.
 type River struct {
 	r *httprouter.Router
-	HandlerChain
+	handlerChain
 	renderer Renderer
 	verbose
 }
@@ -36,7 +36,7 @@ func New(middlewares ...Handler) *River {
 	r.HandleOPTIONS = true
 	r.RedirectTrailingSlash = true
 
-	return (&River{r: r, HandlerChain: middlewares}).
+	return (&River{r: r, handlerChain: middlewares}).
 		NotFound(notFound).
 		NotAllowed(notAllowed)
 }
@@ -58,9 +58,8 @@ func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
 			rw:          w,
 			Request:     r,
 			params:      p,
-			eRenderer:   e.renderer,
-			gRenderer:   rv.renderer,
-			middlewares: append(rv.HandlerChain, append(e.HandlerChain, handler)...),
+			renderer:    notNilRenderer(e.renderer, rv.renderer),
+			middlewares: append(rv.handlerChain, append(e.handlerChain, handler)...),
 		}
 		c.Next()
 	}
@@ -71,8 +70,8 @@ func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
 		c := &Context{
 			rw:          w,
 			Request:     r,
-			middlewares: append(rv.HandlerChain, handler),
-			gRenderer:   rv.renderer,
+			middlewares: append(rv.handlerChain, handler),
+			renderer:    rv.renderer,
 		}
 		c.Next()
 	}
@@ -91,7 +90,7 @@ func (rv *River) handle(p string, e *Endpoint) {
 // Run starts River as an http server.
 func (rv *River) Run(addr string) error {
 	logger.Printf("Server started on %s", addr)
-	rv.dump()
+	rv.Dump()
 	return http.ListenAndServe(addr, rv)
 }
 
@@ -122,4 +121,13 @@ func notFound(c *Context) {
 
 func notAllowed(c *Context) {
 	c.RenderEmpty(http.StatusMethodNotAllowed)
+}
+
+func notNilRenderer(r ...Renderer) Renderer {
+	for i := range r {
+		if r[i] != nil {
+			return r[i]
+		}
+	}
+	return PlainRenderer
 }

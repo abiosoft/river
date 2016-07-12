@@ -5,10 +5,9 @@ type Handler func(*Context)
 
 // Endpoint is a REST endpoint.
 type Endpoint struct {
-	handlers    map[string]endpointFuncs
-	middlewares []Handler
-	renderer    Renderer
-	HandlerChain
+	handlers map[string]endpointFuncs
+	renderer Renderer
+	handlerChain
 }
 
 // NewEndpoint creates a new Endpoint.

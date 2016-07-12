@@ -8,16 +8,16 @@ import (
 	"github.com/fatih/color"
 )
 
-// HandlerChain is middleware chain.
-type HandlerChain []Handler
+// handlerChain is middleware chain.
+type handlerChain []Handler
 
 // Use adds middlewares to the middleware chain.
-func (c *HandlerChain) Use(middlewares ...Handler) {
+func (c *handlerChain) Use(middlewares ...Handler) {
 	*c = append(*c, middlewares...)
 }
 
 // UseHandler adds any http.Handler as middleware to the middleware chain.
-func (c *HandlerChain) UseHandler(middlewares ...http.Handler) {
+func (c *handlerChain) UseHandler(middlewares ...http.Handler) {
 	for i := range middlewares {
 		c.Use(toHandler(middlewares[i]))
 	}

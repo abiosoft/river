@@ -6,7 +6,7 @@ import (
 )
 
 // M is a convenience wrapper for map[string]interface{}.
-//  M{"status": "success, "data": M{"id": 1, "type": "complext"}}
+//  M{"status": "success, "data": M{"id": 1, "type": "complex"}}
 type M map[string]interface{}
 
 // Renderer renders data in a specified format.
