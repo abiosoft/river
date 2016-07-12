@@ -73,7 +73,7 @@ func Recovery(handler func(*Context, interface{})) Handler {
 				if handler != nil {
 					handler(c, err)
 				} else {
-					c.Render(err, http.StatusInternalServerError)
+					c.Render(http.StatusInternalServerError, err)
 				}
 			}
 		}()

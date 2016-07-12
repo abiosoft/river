@@ -18,11 +18,11 @@ e := river.NewEndpoint().
     Get("/:id", func(c *river.Context){
         id := c.Param("id")
         ... // fetch data with id
-        c.Render(data, 200)
+        c.Render(200, data)
     }).
     Post("/", func(c *river.Context){
         ... // process c.Body and store in db
-        c.Render(m, 201)
+        c.Render(201, data)
     })
     ...
 
@@ -40,10 +40,42 @@ rv.Run(":8080")
 ```
 
 ### Approach
-* An endpoint is a REST endpoint with supported methods.
+* An endpoint is a REST endpoint with handlers for supported methods.
 * All endpoints are handled by a River instance.
 * Outputs are rendered via a preset or custom Renderer.
-* Middleware and Renderers can be used globally or by a specific endpoint.
+* Middlewares and Renderers can be global or specific to an endpoint.
+
+### Request Flow
+Basic flow
+```
+Request -> Middlewares -> Endpoint -> Renderer
+```
+
+Full flow.
+```
+                    Request
+                       |
+                       |  
+                     Router
+                    /     \                  
+                   /       \
+                  /         \
+              Found      Not Found / Method Not Allowed
+                 \          /
+                  \        /
+                   \      /
+              Global Middlewares
+                   /      \
+                  /        \
+ Endpoint Middlewares    Not Found / Method Not Allowed Handler
+        |                       |
+        |                       |
+     Endpoint                Renderer
+        |
+        |
+     Renderer
+
+```
 
 ### Endpoint
 Create
@@ -85,12 +117,11 @@ rv.UseHandler(handler)
 ```
 
 ### Renderer
-With River, you can change responses without changing a line of code in your endpoints.
-Renderer takes in data from endpoints and writes it to the ResponseWriter.
+Renderer takes in data from endpoints and writes renders the data as response.
 
-`c.Render(...)` renders using the configured Renderer. `JSONRenderer` is one of the available renderers. 
+`context.Render(...)` renders using the configured Renderer. `JSONRenderer` is one of the available renderers. 
 
-Creating a Renderer. e.g. transform response to JSend format before sending as JSON.
+Example Renderer, transform response to JSend format before sending as JSON.
 ```go
 func MyRenderer (c *river.Context, data interface{}) error {
     resp := river.M{"status" : "success", "data" : data}
@@ -103,14 +134,14 @@ func MyRenderer (c *river.Context, data interface{}) error {
 }
 ```
 
-Setting a Renderer.
+Setting a Renderer. When an endpoint Renderer is not set, global Renderer is used.
 ```go
 rv.Renderer(MyRenderer) // global
 e.Renderer(MyRenderer)  // endpoint
 ```
 
 ### Custom server.
-River is an `http.Handler`. You can add it manually without `Run()`.
+River is an `http.Handler`. You can do without `Run()`.
 ```go
 http.ListenAndServe(":8080", rv)
 ```

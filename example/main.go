@@ -7,13 +7,13 @@ func main() {
 	{
 		rv.Handle("/user", river.NewEndpoint().
 			Get("/:id", func(c *river.Context) {
-				c.Render(c.Param("id"), 200)
+				c.Render(200, c.Param("id"))
 			}).
 			Post("/:id", func(c *river.Context) {
-				c.Render(c.Param("id"), 201)
+				c.Render(200, c.Param("id"))
 			}).
 			Get("/", func(c *river.Context) {
-				c.Render("It works", 200)
+				c.Render(200, "It works")
 			}).
 			Get("/:id/:name", func(c *river.Context) {
 				panic("whatever")
@@ -33,12 +33,12 @@ func main() {
 }
 
 func name(c *river.Context) {
-	c.Render(river.M{"name": c.Param("name")}, 200)
+	c.Render(200, river.M{"name": c.Param("name")})
 }
 
 func nameID(c *river.Context) {
-	c.Render(river.M{
+	c.Render(200, river.M{
 		"name": c.Param("name"),
 		"id":   c.Param("id"),
-	}, 200)
+	})
 }

@@ -83,7 +83,7 @@ func (rv *River) handle(p string, e *Endpoint) {
 		fullPath := path.Join(p, subpath)
 		for method, handler := range e.handlers[subpath] {
 			rv.r.Handle(method, fullPath, rv.routerHandle(handler, e))
-			rv.handledPaths.add(method, fullPath, handler)
+			rv.handledPaths.add(method, fullPath, nameOf(handler))
 		}
 	}
 }

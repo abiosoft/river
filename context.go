@@ -109,7 +109,7 @@ func (c *Context) Set(key string, value interface{}) {
 // Render renders data using the current endpoint's renderer (if any)
 // or global renderer (if any) or PlainRenderer; in that preference order.
 // status is HTTP status code to respond with.
-func (c *Context) Render(data interface{}, status int) error {
+func (c *Context) Render(status int, data interface{}) error {
 	c.WriteHeader(status)
 	if c.eRenderer != nil {
 		return c.eRenderer(c, data)

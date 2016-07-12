@@ -17,20 +17,18 @@ func (v verbose) dump() {
 	fmt.Fprintln(&b, "Endpoints")
 	fmt.Fprintln(&b, "---------")
 	for _, hp := range v.handledPaths {
-		fmt.Fprintf(&b, "%-4s  %-25s -> %s\n", hp.method, hp.path, nameOf(hp.handler))
+		fmt.Fprintf(&b, "%-4s  %-25s  %s\n", hp.method, hp.path, hp.handler)
 	}
 	logger.Println(b.String())
 }
 
 type handledPath struct {
-	path    string
-	method  string
-	handler Handler
+	path, method, handler string
 }
 
 type handledPaths []handledPath
 
-func (h *handledPaths) add(method, path string, handler Handler) {
+func (h *handledPaths) add(method, path string, handler string) {
 	*h = append(*h, handledPath{path: path, method: method, handler: handler})
 }
 
