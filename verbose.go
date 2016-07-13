@@ -18,7 +18,7 @@ func (v verbose) Dump() {
 	fmt.Fprintln(&b, "Endpoints")
 	fmt.Fprintln(&b, "---------")
 	for _, hp := range v.handledPaths {
-		fmt.Fprintf(&b, "%-4s  %-25s  %s\n", hp.method, hp.path, hp.handler)
+		fmt.Fprintf(&b, "%-8s  %-25s  %s\n", hp.method, hp.path, hp.handler)
 	}
 	logger.Println(b.String())
 }

@@ -30,6 +30,7 @@ type River struct {
 // New creates a new River.
 // Optional params middlewares are the middlewares to initiate with.
 // Middlewares can also be added with river.Use* methods.
+// Renderer defaults to JSONRenderer.
 func New(middlewares ...Handler) *River {
 	r := httprouter.New()
 	r.HandleMethodNotAllowed = true
@@ -38,7 +39,8 @@ func New(middlewares ...Handler) *River {
 
 	return (&River{r: r, handlerChain: middlewares}).
 		NotFound(notFound).
-		NotAllowed(notAllowed)
+		NotAllowed(notAllowed).
+		Renderer(JSONRenderer)
 }
 
 func (rv *River) ServeHTTP(w http.ResponseWriter, r *http.Request) {
