@@ -117,7 +117,7 @@ rv.UseHandler(handler)
 ```
 
 ### Renderer
-Renderer takes in data from endpoints and writes renders the data as response.
+Renderer takes in data from endpoints and renders the data as response.
 
 `context.Render(...)` renders using the configured Renderer. `JSONRenderer` is one of the available renderers. 
 
