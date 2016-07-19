@@ -56,7 +56,7 @@ func Logger() Handler {
 		status := paint(fmt.Sprintf("  %d  ", c.Status()))
 
 		fmt.Printf("%s %v %s %15v %-4s %s\n",
-			logger.Prefix(),
+			log.prefix(),
 			time.Now().Format("2006-01-02 15:04:05"),
 			status, duration, c.Method, c.URL.Path,
 		)

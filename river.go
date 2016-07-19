@@ -1,23 +1,11 @@
 package river
 
 import (
-	"io"
-	"log"
 	"net/http"
-	"os"
 	"path"
 
 	"github.com/julienschmidt/httprouter"
 )
-
-var (
-	logger = log.New(os.Stdout, "[River] ", 0)
-)
-
-// LogOutput sets the output to use for logger.
-func LogOutput(w io.Writer) {
-	logger.SetOutput(w)
-}
 
 // River is a REST server handler and toolkit.
 type River struct {
@@ -72,8 +60,8 @@ func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
 		c := &Context{
 			rw:          w,
 			Request:     r,
+			renderer:    notNilRenderer(rv.renderer),
 			middlewares: append(rv.handlerChain, handler),
-			renderer:    rv.renderer,
 		}
 		c.Next()
 	}
@@ -91,13 +79,13 @@ func (rv *River) handle(p string, e *Endpoint) {
 
 // Run starts River as an http server.
 func (rv *River) Run(addr string) error {
-	logger.Printf("Server started on %s", addr)
+	log.printf("Server started on %s", addr)
 	rv.Dump()
 	return http.ListenAndServe(addr, rv)
 }
 
 // Renderer sets output renderer.
-// Endpoint specific Renderer overrules this.
+// An endpoint renderer overrules this.
 func (rv *River) Renderer(r Renderer) *River {
 	rv.renderer = r
 	return rv

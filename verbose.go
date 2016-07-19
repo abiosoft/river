@@ -20,7 +20,7 @@ func (v verbose) Dump() {
 	for _, hp := range v.handledPaths {
 		fmt.Fprintf(&b, "%-8s  %-25s  %s\n", hp.method, hp.path, hp.handler)
 	}
-	logger.Println(b.String())
+	log.println(b.String())
 }
 
 type handledPath struct {
