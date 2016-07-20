@@ -18,6 +18,7 @@ type Context struct {
 	values        map[string]interface{}
 	renderer      Renderer
 	middlewares   []Handler
+	jsonDecoder   jsonDecoder
 	headerWritten bool
 	status        int
 }
@@ -124,6 +125,27 @@ func (c *Context) RenderEmpty(status int) error {
 // has been written.
 func (c *Context) Status() int {
 	return c.status
+}
+
+// DecodeJSONBody decodes the request body as JSON into v.
+// The request body must be JSON and v must be a pointer to
+// a compatible type for the JSON body.
+// Type conversion is done if required based on v's underlying type.
+// If v points to a struct and request body is a json array,
+// an attempt is made to decode to a slice of the struct and the
+// first element of the slice will be stored in v.
+// Likewise if v points to a slice and request body is a json object,
+// an attempt is made to decode to the item type of the slice and a slice
+// containing the item will be returned.
+//  var v []Type // c.DecodeJSONBody(&v) works even if body is a json object.
+//  var v Type // c.DecodeJSONBody(&v) works even if body is a json array.
+func (c *Context) DecodeJSONBody(v interface{}) error {
+	if c.jsonDecoder == nil {
+		if err := c.jsonDecoder.Init(c.Request.Body); err != nil {
+			return err
+		}
+	}
+	return c.jsonDecoder.Decode(v)
 }
 
 /* net/context / Go 1.7 Request.Context */
