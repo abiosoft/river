@@ -11,7 +11,7 @@ func main() {
 
 	userEndpoint := river.NewEndpoint().
 		Get("/:id", getUser).
-		Post("/:id", addUser).
+		Post("/", addUser).
 		Get("/", getAllUser).
 		Put("/:id", updateUser).
 		Delete("/:id", deleteUser)
@@ -35,25 +35,24 @@ func getAllUser(c *river.Context) {
 }
 
 func addUser(c *river.Context) {
-	id := c.FormValue("id")
-	name := c.FormValue("name")
-	if id == "" || name == "" {
-		c.RenderEmpty(http.StatusBadRequest)
+	var users []User
+	if err := c.DecodeJSONBody(&users); err != nil {
+		c.Render(http.StatusBadRequest, err)
 		return
 	}
-	user := User{ID: id, Name: name}
-	userModel.add(user)
-	c.Render(http.StatusCreated, user)
+	for i := range users {
+		userModel.add(users[i])
+	}
+	c.Render(http.StatusCreated, users)
 }
 
 func updateUser(c *river.Context) {
-	id := c.FormValue("id")
-	name := c.FormValue("name")
-	if id == "" || name == "" {
-		c.RenderEmpty(http.StatusBadRequest)
+	id := c.Param("id")
+	var user User
+	if err := c.DecodeJSONBody(&user); err != nil {
+		c.Render(http.StatusBadRequest, err)
 		return
 	}
-	user := User{ID: id, Name: name}
 	userModel.put(id, user)
 	c.Render(http.StatusOK, user)
 }
@@ -69,7 +68,7 @@ Sample basic data model
 type model struct {
 	get    func(id string) interface{}
 	getAll func() interface{}
-	add    func(item interface{})
+	add    func(items ...interface{})
 	put    func(id string, item interface{})
 	delete func(id string)
 }
@@ -102,8 +101,10 @@ func init() {
 	userModel.getAll = func() interface{} {
 		return users
 	}
-	userModel.add = func(item interface{}) {
-		users = append(users, item.(User))
+	userModel.add = func(items ...interface{}) {
+		for i := range items {
+			users = append(users, items[i].(User))
+		}
 	}
 	userModel.put = func(id string, item interface{}) {
 		if i := search(id); i > -1 {

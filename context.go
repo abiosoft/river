@@ -130,22 +130,22 @@ func (c *Context) Status() int {
 // DecodeJSONBody decodes the request body as JSON into v.
 // The request body must be JSON and v must be a pointer to
 // a compatible type for the JSON body.
-// Type conversion is done if required based on v's underlying type.
+// Type conversion is done if required; based on v's underlying type.
 // If v points to a struct and request body is a json array,
 // an attempt is made to decode to a slice of the struct and the
 // first element of the slice will be stored in v.
 // Likewise if v points to a slice and request body is a json object,
 // an attempt is made to decode to the item type of the slice and a slice
-// containing the item will be returned.
+// containing the item will be stored in v.
 //  var v []Type // c.DecodeJSONBody(&v) works even if body is a json object.
 //  var v Type // c.DecodeJSONBody(&v) works even if body is a json array.
 func (c *Context) DecodeJSONBody(v interface{}) error {
 	if c.jsonDecoder == nil {
-		if err := c.jsonDecoder.Init(c.Request.Body); err != nil {
+		if err := c.jsonDecoder.init(c.Request.Body); err != nil {
 			return err
 		}
 	}
-	return c.jsonDecoder.Decode(v)
+	return c.jsonDecoder.decode(v)
 }
 
 /* net/context / Go 1.7 Request.Context */

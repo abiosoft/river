@@ -10,19 +10,19 @@ import (
 
 type jsonDecoder []byte
 
-func (j *jsonDecoder) Init(src io.Reader) error {
+func (j *jsonDecoder) init(src io.Reader) error {
 	b, err := ioutil.ReadAll(src)
 	*j = b
 	return err
 }
 
-func (j *jsonDecoder) Copy() []byte {
+func (j *jsonDecoder) copy() []byte {
 	buf := make([]byte, len(*j))
 	copy(buf, *j)
 	return buf
 }
 
-func (j *jsonDecoder) Decode(v interface{}) (err error) {
+func (j *jsonDecoder) decode(v interface{}) (err error) {
 	defer func() {
 		if err1 := recover(); err1 != nil {
 			if _, ok := err1.(error); ok {
@@ -37,7 +37,7 @@ func (j *jsonDecoder) Decode(v interface{}) (err error) {
 		return fmt.Errorf("cannot marshal to %v, must be pointer and not nil", reflect.TypeOf(v))
 	}
 
-	if err := json.Unmarshal(j.Copy(), &v); err == nil {
+	if err := json.Unmarshal(j.copy(), &v); err == nil {
 		return nil
 	} else if _, ok := err.(*json.UnmarshalTypeError); !ok {
 		// not type related error
@@ -50,7 +50,7 @@ func (j *jsonDecoder) Decode(v interface{}) (err error) {
 		// if type is slice, attempt an element of the slice
 		// and return a slice containing the element.
 		item := reflect.New(reflect.ValueOf(v).Elem().Type().Elem())
-		if err := json.Unmarshal(j.Copy(), item.Interface()); err != nil {
+		if err := json.Unmarshal(j.copy(), item.Interface()); err != nil {
 			return err
 		}
 		elem = reflect.Append(reflect.ValueOf(v).Elem(), item.Elem())
@@ -58,7 +58,7 @@ func (j *jsonDecoder) Decode(v interface{}) (err error) {
 		// if type is a struct, attempt a slice of the struct
 		// and return first element of the slice.
 		slice := reflect.New(reflect.SliceOf(reflect.TypeOf(v).Elem()))
-		if err := json.Unmarshal(j.Copy(), slice.Interface()); err != nil {
+		if err := json.Unmarshal(j.copy(), slice.Interface()); err != nil {
 			return err
 		}
 		elem = slice.Elem().Index(0)

@@ -26,7 +26,7 @@ func TestJsonDecoder(t *testing.T) {
 
 	for i, test := range itemTests {
 		decoder := jsonDecoder([]byte(test.body))
-		err := decoder.Decode(&test.obj)
+		err := decoder.decode(&test.obj)
 		if err != nil {
 			t.Errorf("Struct Test %d: %v", i, err)
 		}
@@ -55,7 +55,7 @@ func TestJsonDecoder(t *testing.T) {
 
 	for i, test := range sliceTests {
 		decoder := jsonDecoder([]byte(test.body))
-		err := decoder.Decode(&test.obj)
+		err := decoder.decode(&test.obj)
 		if err != nil {
 			t.Errorf("Struct Test %d: %v", i, err)
 		}

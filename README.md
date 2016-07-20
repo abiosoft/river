@@ -94,6 +94,15 @@ e.Get(...).Post(...).Put(...) // method chaining
 e.Handle(method, ...) // for custom request methods
 ```
 
+JSON helper
+```go
+func (c *river.Context){
+    var users []User
+    c.DecodeJSONBody(&users)
+    ... // process users
+}
+```
+
 ### Middleware
 River comes with `river.Logger()` and `river.Recovery()` for logging and panic recovery.  
 
