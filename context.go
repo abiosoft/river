@@ -9,6 +9,7 @@ import (
 
 // Context is a request scope context.
 // Context implements http.ResponseWriter and embeds http.Request.
+//
 // It can be adapted for use in an http.Handler e.g.
 //  handler.ServeHTTP(c, c.Request)
 type Context struct {
@@ -25,6 +26,7 @@ type Context struct {
 
 // Param returns URL parameters. If key is not found,
 // empty string is returned.
+//
 // Params are set with :key in the handle path.
 // e.g. /:category/:id
 func (c *Context) Param(key string) string {
@@ -49,6 +51,7 @@ func (c *Context) Redirect(url string, code int) {
 // Next calls the next handler in the middleware chain.
 // A middleware must call Next, otherwise the request stops
 // at the middleware.
+//
 // Next has no effect if called in an endpoint handler.
 func (c *Context) Next() {
 	if len(c.middlewares) < 1 {
@@ -128,15 +131,19 @@ func (c *Context) Status() int {
 }
 
 // DecodeJSONBody decodes the request body as JSON into v.
+//
 // The request body must be JSON and v must be a pointer to
 // a compatible type for the JSON body.
+//
 // Type conversion is done if required; based on v's underlying type.
 // If v points to a struct and request body is a json array,
 // an attempt is made to decode to a slice of the struct and the
 // first element of the slice will be stored in v.
+//
 // Likewise if v points to a slice and request body is a json object,
 // an attempt is made to decode to the item type of the slice and a slice
 // containing the item will be stored in v.
+//
 //  var v []Type // c.DecodeJSONBody(&v) works even if body is a json object.
 //  var v Type // c.DecodeJSONBody(&v) works even if body is a json array.
 func (c *Context) DecodeJSONBody(v interface{}) error {

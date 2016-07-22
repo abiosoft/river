@@ -18,6 +18,7 @@ type River struct {
 // New creates a new River.
 // Optional params middlewares are the middlewares to initiate with.
 // Middlewares can also be added with river.Use* methods.
+//
 // Renderer defaults to JSONRenderer.
 func New(middlewares ...Handler) *River {
 	r := httprouter.New()
@@ -68,9 +69,9 @@ func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
 }
 
 func (rv *River) handle(p string, e *Endpoint) {
-	for subpath := range e.handlers {
-		fullPath := path.Join(p, subpath)
-		for method, handler := range e.handlers[subpath] {
+	for subPath := range e.handlers {
+		fullPath := path.Join(p, subPath)
+		for method, handler := range e.handlers[subPath] {
 			rv.r.Handle(method, fullPath, rv.routerHandle(handler, e))
 			rv.handledPaths.add(method, fullPath, nameOf(handler))
 		}

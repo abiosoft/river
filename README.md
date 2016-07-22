@@ -39,6 +39,8 @@ Run
 rv.Run(":8080")
 ```
 
+Check [example](https://github.com/abiosoft/river/tree/master/example) code for more.
+
 ### Approach
 * An endpoint is a REST endpoint with handlers for supported methods.
 * All endpoints are handled by a River instance.
@@ -161,9 +163,6 @@ River uses [httprouter](https://github.com/julienschmidt/httprouter) underneath.
 ### Contributing
 * Create an issue to discuss.
 * Send in a PR.
-
-### I wrote a middleware
-Thanks, I will appreciate if you create a PR to add it to this README. 
 
 ### Why the name "River", a "REST" server ? Can you REST on a River ?
 Well, yes. You only need to know how to swim or wear a life jacket. 
