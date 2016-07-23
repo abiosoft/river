@@ -157,26 +157,32 @@ func (c *Context) DecodeJSONBody(v interface{}) error {
 
 /* net/context / Go 1.7 Request.Context */
 
-// Deadline satisfies net/context / Go 1.7 Request.Context
+// Deadline returns the time when work done on behalf of this context
+// should be canceled. Deadline returns ok==false when no deadline is
+// set. Successive calls to Deadline return the same results.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-// Done satisfies net/context / Go 1.7 Request.Context.
+// Done returns a channel that's closed when work done on behalf of this
+// context should be canceled. Done may return nil if this context can
+// never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
 	return nil
 }
 
-// Err satisfies net/context / Go 1.7 Request.Context.
+// Err returns a non-nil error value after Done is closed. Err returns
+// Canceled if the context was canceled or DeadlineExceeded if the
+// context's deadline passed. No other values for Err are defined.
+// After Done is closed, successive calls to Err return the same value.
 func (c *Context) Err() error {
 	return nil
 }
 
-// Value satisfies net/context / Go 1.7 Request.Context.
+// Value returns the value associated with this context for key, or nil
+// if no value is associated with key. Successive calls to Value with
+// the same key returns the same result.
 func (c *Context) Value(key interface{}) interface{} {
-	if key == 0 {
-		return c.Request
-	}
 	if k, ok := key.(string); ok {
 		return c.Get(k)
 	}
