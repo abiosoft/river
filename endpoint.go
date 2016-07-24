@@ -7,7 +7,7 @@ import (
 
 // EndpointHandler is an endpoint handler with support for dependency injection.
 // Any function type is a valid EndpointHandler; including river.Handler and
-// http.Handler, and function parameters will be injected accordingly.
+// http.Handler. Function parameters will be injected accordingly.
 //
 // If a service is not previously registered and it is not one of
 // *river.Context, http.ResponseWriter and *http.Request, zero value of the type
@@ -15,6 +15,8 @@ import (
 //
 // If a non function type is passed as EndpointHandler to Endpoint
 // request functions (Get, Post e.t.c.), a panic occurs.
+//
+// The return values of the function (if any) are discarded.
 type EndpointHandler interface{}
 
 // Endpoint is a REST endpoint.
