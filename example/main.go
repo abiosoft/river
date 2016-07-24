@@ -17,7 +17,7 @@ func main() {
 		Delete("/:id", deleteUser)
 
 	rv.Handle("/user", userEndpoint)
-	rv.Register(newBasicModel())
+	rv.Register(basicModel())
 	rv.Run(":8080")
 }
 
@@ -77,7 +77,7 @@ type User struct {
 	Name string `json:"name"`
 }
 
-func newBasicModel() Model {
+func basicModel() Model {
 	var model Model
 	var users = []User{}
 	search := func(id string) int {

@@ -16,8 +16,7 @@ type River struct {
 	serviceInjector
 }
 
-// New creates a new River.
-// Optional params middlewares are the middlewares to initiate with.
+// New creates a new River and initiates with middlewares.
 // Middlewares can also be added with river.Use* methods.
 //
 // Renderer defaults to JSONRenderer.
