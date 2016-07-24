@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	rv := river.New(river.Logger(), river.Recovery(nil))
+	rv := river.New(river.Logger()) //, river.Recovery())
 
 	userEndpoint := river.NewEndpoint().
 		Get("/:id", getUser).
@@ -17,12 +17,12 @@ func main() {
 		Delete("/:id", deleteUser)
 
 	rv.Handle("/user", userEndpoint)
-
+	rv.Register(newBasicModel())
 	rv.Run(":8080")
 }
 
-func getUser(c *river.Context) {
-	user := userModel.get(c.Param("id"))
+func getUser(c *river.Context, model Model) {
+	user := model.get(c.Param("id"))
 	if user == nil {
 		c.RenderEmpty(http.StatusNotFound)
 		return
@@ -30,42 +30,40 @@ func getUser(c *river.Context) {
 	c.Render(http.StatusOK, user)
 }
 
-func getAllUser(c *river.Context) {
-	c.Render(http.StatusOK, userModel.getAll())
+func getAllUser(c *river.Context, model Model) {
+	c.Render(http.StatusOK, model.getAll())
 }
 
-func addUser(c *river.Context) {
+func addUser(c *river.Context, model Model) {
 	var users []User
 	if err := c.DecodeJSONBody(&users); err != nil {
 		c.Render(http.StatusBadRequest, err)
 		return
 	}
 	for i := range users {
-		userModel.add(users[i])
+		model.add(users[i])
 	}
 	c.Render(http.StatusCreated, users)
 }
 
-func updateUser(c *river.Context) {
+func updateUser(c *river.Context, model Model) {
 	id := c.Param("id")
 	var user User
 	if err := c.DecodeJSONBody(&user); err != nil {
 		c.Render(http.StatusBadRequest, err)
 		return
 	}
-	userModel.put(id, user)
+	model.put(id, user)
 	c.Render(http.StatusOK, user)
 }
 
-func deleteUser(c *river.Context) {
-	userModel.delete(c.Param("id"))
+func deleteUser(c *river.Context, model Model) {
+	model.delete(c.Param("id"))
 	c.RenderEmpty(http.StatusNoContent)
 }
 
-/*
-Sample basic data model
-*/
-type model struct {
+// Model is a sample basic data model.
+type Model struct {
 	get    func(id string) interface{}
 	getAll func() interface{}
 	add    func(items ...interface{})
@@ -73,17 +71,15 @@ type model struct {
 	delete func(id string)
 }
 
-var userModel model
-
 // User is user data.
 type User struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-var users = []User{}
-
-func init() {
+func newBasicModel() Model {
+	var model Model
+	var users = []User{}
 	search := func(id string) int {
 		for i := range users {
 			if users[i].ID == id {
@@ -92,26 +88,26 @@ func init() {
 		}
 		return -1
 	}
-	userModel.get = func(id string) interface{} {
+	model.get = func(id string) interface{} {
 		if i := search(id); i > -1 {
 			return users[i]
 		}
 		return nil
 	}
-	userModel.getAll = func() interface{} {
+	model.getAll = func() interface{} {
 		return users
 	}
-	userModel.add = func(items ...interface{}) {
+	model.add = func(items ...interface{}) {
 		for i := range items {
 			users = append(users, items[i].(User))
 		}
 	}
-	userModel.put = func(id string, item interface{}) {
+	model.put = func(id string, item interface{}) {
 		if i := search(id); i > -1 {
 			users[i] = item.(User)
 		}
 	}
-	userModel.delete = func(id string) {
+	model.delete = func(id string) {
 		if i := search(id); i > -1 {
 			part := append(users[:i])
 			if i < len(users)-1 {
@@ -120,4 +116,5 @@ func init() {
 			users = part
 		}
 	}
+	return model
 }

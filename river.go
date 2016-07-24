@@ -13,6 +13,7 @@ type River struct {
 	handlerChain
 	renderer Renderer
 	verbose
+	serviceInjector
 }
 
 // New creates a new River.
@@ -43,15 +44,18 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	return rv
 }
 
-func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
+func (rv *River) routerHandle(h EndpointHandler, e *Endpoint) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		handler := endpointToHandler(h)
 		c := &Context{
-			rw:          w,
-			Request:     r,
-			params:      p,
-			renderer:    notNilRenderer(e.renderer, rv.renderer),
-			middlewares: append(rv.handlerChain, append(e.handlerChain, handler)...),
+			rw:              w,
+			Request:         r,
+			params:          p,
+			renderer:        notNilRenderer(e.renderer, rv.renderer),
+			middlewares:     append(rv.handlerChain, append(e.handlerChain, handler)...),
+			serviceInjector: rv.serviceInjector.merge(e.serviceInjector),
 		}
+
 		c.Next()
 	}
 }
@@ -59,10 +63,11 @@ func (rv *River) routerHandle(handler Handler, e *Endpoint) httprouter.Handle {
 func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := &Context{
-			rw:          w,
-			Request:     r,
-			renderer:    notNilRenderer(rv.renderer),
-			middlewares: append(rv.handlerChain, handler),
+			rw:              w,
+			Request:         r,
+			renderer:        notNilRenderer(rv.renderer),
+			middlewares:     append(rv.handlerChain, handler),
+			serviceInjector: rv.serviceInjector,
 		}
 		c.Next()
 	}
@@ -94,15 +99,23 @@ func (rv *River) Renderer(r Renderer) *River {
 
 // NotAllowed replaces the default handler for methods not handled by
 // any endpoint with h.
-func (rv *River) NotAllowed(h Handler) *River {
-	rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(h)
+func (rv *River) NotAllowed(h EndpointHandler) *River {
+	if handler, ok := h.(Handler); ok {
+		rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(handler)
+	} else {
+		rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(endpointToHandler(h))
+	}
 	return rv
 }
 
 // NotFound replaces the default handler for request paths without
 // any endpoint.
-func (rv *River) NotFound(h Handler) *River {
-	rv.r.NotFound = rv.routerHandleNoEndpoint(h)
+func (rv *River) NotFound(h EndpointHandler) *River {
+	if handler, ok := h.(Handler); ok {
+		rv.r.NotFound = rv.routerHandleNoEndpoint(handler)
+	} else {
+		rv.r.NotFound = rv.routerHandleNoEndpoint(endpointToHandler(h))
+	}
 	return rv
 }
 

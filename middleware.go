@@ -8,6 +8,9 @@ import (
 	"github.com/fatih/color"
 )
 
+// Handler is request handler for middlewares.
+type Handler func(*Context)
+
 // handlerChain is middleware chain.
 type handlerChain []Handler
 
@@ -64,14 +67,16 @@ func Logger() Handler {
 	}
 }
 
-// Recovery creates a panic recovery middleware. If handler is not nil,
-// it calls handler after recovery
-func Recovery(handler func(*Context, interface{})) Handler {
+// Recovery creates a panic recovery middleware.
+// Handlers passed will be called after recovery.
+func Recovery(handlers ...func(*Context, interface{})) Handler {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				if handler != nil {
-					handler(c, err)
+				if handlers != nil {
+					for i := range handlers {
+						handlers[i](c, err)
+					}
 				} else {
 					c.Render(http.StatusInternalServerError, err)
 				}

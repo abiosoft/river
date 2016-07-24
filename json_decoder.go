@@ -28,13 +28,13 @@ func (j *jsonDecoder) decode(v interface{}) (err error) {
 			if _, ok := err1.(error); ok {
 				err = err1.(error)
 			} else {
-				err = fmt.Errorf("Unitenfied error %v", err1)
+				err = fmt.Errorf("Unidenfied error %v", err1)
 			}
 		}
 	}()
 
 	if !reflect.ValueOf(v).IsValid() || reflect.TypeOf(v).Kind() != reflect.Ptr || reflect.ValueOf(v).IsNil() {
-		return fmt.Errorf("cannot marshal to %v, must be pointer and not nil", reflect.TypeOf(v))
+		return fmt.Errorf("cannot marshal to %v, must be pointer and not nil", reflect.TypeOf(v).String())
 	}
 
 	if err := json.Unmarshal(j.copy(), &v); err == nil {

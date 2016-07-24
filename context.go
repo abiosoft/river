@@ -22,6 +22,7 @@ type Context struct {
 	jsonDecoder   jsonDecoder
 	headerWritten bool
 	status        int
+	serviceInjector
 }
 
 // Param returns URL parameters. If key is not found,
