@@ -43,13 +43,12 @@ func (s serviceInjector) invoke(f interface{}) {
 	reflect.ValueOf(f).Call(args)
 }
 
-// merge merges all services in s1 into the service injector.
-func (s *serviceInjector) merge(s1 serviceInjector) serviceInjector {
-	if *s == nil {
-		*s = make(serviceInjector)
+func copyInjectors(injectors ...serviceInjector) serviceInjector {
+	var s = serviceInjector{}
+	for i := range injectors {
+		for j := range injectors[i] {
+			s[j] = injectors[i][j]
+		}
 	}
-	for k := range s1 {
-		(*s)[k] = s1[k]
-	}
-	return *s
+	return s
 }

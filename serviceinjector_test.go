@@ -34,7 +34,7 @@ func TestServiceInjector_invoke(t *testing.T) {
 func TestServiceInjector_merge(t *testing.T) {
 	stringType := reflect.TypeOf("")
 	injector := newInjector()
-	injector.merge(serviceInjector{
+	injector = copyInjectors(serviceInjector{
 		stringType: "some string",
 	})
 	if _, ok := injector[stringType]; !ok {

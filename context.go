@@ -8,7 +8,7 @@ import (
 )
 
 // Context is a request scope context.
-// Context implements http.ResponseWriter and embeds http.Request.
+// Context implements http.ResponseWriter and embeds *http.Request.
 //
 // It can be adapted for use in an http.Handler e.g.
 //  handler.ServeHTTP(c, c.Request)
@@ -18,10 +18,11 @@ type Context struct {
 	params        httprouter.Params
 	values        map[string]interface{}
 	renderer      Renderer
-	middlewares   []Handler
+	middlewares   []Middleware
 	jsonDecoder   jsonDecoder
 	headerWritten bool
 	status        int
+	written       int
 	serviceInjector
 }
 
@@ -82,7 +83,9 @@ func (c *Context) Write(b []byte) (int, error) {
 	if !c.headerWritten {
 		c.WriteHeader(http.StatusOK)
 	}
-	return c.rw.Write(b)
+	n, err := c.rw.Write(b)
+	c.written += n
+	return n, err
 }
 
 // WriteHeader sends an HTTP response header with status code.
@@ -129,6 +132,12 @@ func (c *Context) RenderEmpty(status int) error {
 // has been written.
 func (c *Context) Status() int {
 	return c.status
+}
+
+// Written returns the total number of bytes that have been written
+// to the ResponseWriter.
+func (c *Context) Written() int {
+	return c.written
 }
 
 // DecodeJSONBody decodes the request body as JSON into v.

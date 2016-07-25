@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	rv := river.New(river.Logger()) //, river.Recovery())
+	rv := river.New(river.Recovery())
 
 	userEndpoint := river.NewEndpoint().
 		Get("/:id", getUser).
@@ -18,6 +18,12 @@ func main() {
 
 	rv.Handle("/user", userEndpoint)
 	rv.Register(basicModel())
+
+	panicEndpoint := river.NewEndpoint().
+		Get("/", func() { panic("Recovery middleware should handle this") })
+
+	rv.Handle("/panic", panicEndpoint)
+
 	rv.Run(":8080")
 }
 

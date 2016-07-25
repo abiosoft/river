@@ -10,23 +10,23 @@ import (
 // River is a REST server handler and toolkit.
 type River struct {
 	r *httprouter.Router
-	handlerChain
+	middlewareChain
 	renderer Renderer
-	verbose
 	serviceInjector
+	verbose
 }
 
 // New creates a new River and initiates with middlewares.
 // Middlewares can also be added with river.Use* methods.
 //
 // Renderer defaults to JSONRenderer.
-func New(middlewares ...Handler) *River {
+func New(middlewares ...Middleware) *River {
 	r := httprouter.New()
 	r.HandleMethodNotAllowed = true
 	r.HandleOPTIONS = true
 	r.RedirectTrailingSlash = true
 
-	return (&River{r: r, handlerChain: middlewares}).
+	return (&River{r: r, middlewareChain: middlewares}).
 		NotFound(notFound).
 		NotAllowed(notAllowed).
 		Renderer(JSONRenderer)
@@ -43,30 +43,28 @@ func (rv *River) Handle(p string, e *Endpoint) *River {
 	return rv
 }
 
-func (rv *River) routerHandle(h EndpointHandler, e *Endpoint) httprouter.Handle {
+func (rv *River) routerHandle(h Handler, e *Endpoint) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		handler := endpointToHandler(h)
 		c := &Context{
 			rw:              w,
 			Request:         r,
 			params:          p,
 			renderer:        notNilRenderer(e.renderer, rv.renderer),
-			middlewares:     append(rv.handlerChain, append(e.handlerChain, handler)...),
-			serviceInjector: rv.serviceInjector.merge(e.serviceInjector),
+			middlewares:     composeMiddlewares(rv, handlerToMiddleware(h), e),
+			serviceInjector: copyInjectors(rv.serviceInjector, e.serviceInjector),
 		}
-
 		c.Next()
 	}
 }
 
-func (rv *River) routerHandleNoEndpoint(handler Handler) http.HandlerFunc {
+func (rv *River) routerHandleNoEndpoint(handler Middleware) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		c := &Context{
 			rw:              w,
 			Request:         r,
 			renderer:        notNilRenderer(rv.renderer),
-			middlewares:     append(rv.handlerChain, handler),
-			serviceInjector: rv.serviceInjector,
+			middlewares:     composeMiddlewares(rv, handler, nil),
+			serviceInjector: copyInjectors(rv.serviceInjector),
 		}
 		c.Next()
 	}
@@ -98,24 +96,37 @@ func (rv *River) Renderer(r Renderer) *River {
 
 // NotAllowed replaces the default handler for methods not handled by
 // any endpoint with h.
-func (rv *River) NotAllowed(h EndpointHandler) *River {
-	if handler, ok := h.(Handler); ok {
+func (rv *River) NotAllowed(h Handler) *River {
+	if handler, ok := h.(Middleware); ok {
 		rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(handler)
 	} else {
-		rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(endpointToHandler(h))
+		rv.r.MethodNotAllowed = rv.routerHandleNoEndpoint(handlerToMiddleware(h))
 	}
 	return rv
 }
 
 // NotFound replaces the default handler for request paths without
 // any endpoint.
-func (rv *River) NotFound(h EndpointHandler) *River {
-	if handler, ok := h.(Handler); ok {
+func (rv *River) NotFound(h Handler) *River {
+	if handler, ok := h.(Middleware); ok {
 		rv.r.NotFound = rv.routerHandleNoEndpoint(handler)
 	} else {
-		rv.r.NotFound = rv.routerHandleNoEndpoint(endpointToHandler(h))
+		rv.r.NotFound = rv.routerHandleNoEndpoint(handlerToMiddleware(h))
 	}
 	return rv
+}
+
+func composeMiddlewares(rv *River, h Middleware, e *Endpoint) []Middleware {
+	var middlewares []Middleware
+	if e != nil {
+		middlewares = append(rv.middlewareChain, append(e.middlewareChain, h)...)
+	} else {
+		middlewares = append(rv.middlewareChain, h)
+	}
+	if LogRequests {
+		middlewares = append([]Middleware{requestLogger()}, middlewares...)
+	}
+	return middlewares
 }
 
 func notFound(c *Context) {

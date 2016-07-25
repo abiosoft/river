@@ -85,19 +85,19 @@ Create
 e := river.NewEndpoint()
 ```
 
-Any function can be a request handler thanks to dependency injection. 
+Handle Requests
+```go
+e.Get("/", handler).Post(...).Put(...) // method chaining
+e.Handle(method, ...) // for custom request methods
+```
+
+Any function can be an handler thanks to dependency injection. 
 River is also compatible with `http.Handler`. 
 ```go
 func () {...} // valid
 func (c *river.Context) {...} // valid
 func (c *river.Context, m MyStruct) {...} // valid
 func (w http.ResponseWriter, r *http.Request) {...} // valid
-```
-
-Handle Requests
-```go
-e.Get(...).Post(...).Put(...) // method chaining
-e.Handle(method, ...) // for custom request methods
 ```
 
 JSON helper
@@ -110,9 +110,9 @@ func (c *river.Context){
 ```
 
 ### Middleware
-Handler 
+A middleware is any function that takes in the context.
 ```go
-func (c *river.Context)
+type Middleware func(c *river.Context)
 ```
 
 River comes with `river.Logger()` and `river.Recovery()` for logging and panic recovery.  
@@ -131,7 +131,7 @@ func (c *river.Context){
 }
 ```
 
-Any `http.Handler` can be a middleware.
+Any `http.Handler` can also be used as a middleware.
 ```go
 rv.UseHandler(handler)
 ```
