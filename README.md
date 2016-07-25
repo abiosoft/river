@@ -98,6 +98,7 @@ func () {...} // valid
 func (c *river.Context) {...} // valid
 func (c *river.Context, m MyStruct) {...} // valid
 func (w http.ResponseWriter, r *http.Request) {...} // valid
+func (w http.ResponseWriter, r *http.Request, m MyStruct) {...} // valid
 ```
 
 JSON helper
