@@ -85,8 +85,8 @@ Create
 e := river.NewEndpoint()
 ```
 
-Any function can be a Request Handler. River supports dependency 
-injection and it is also compatible with `http.Handler`. 
+Any function can be a request handler thanks to dependency injection. 
+River is also compatible with `http.Handler`. 
 ```go
 func () {...} // valid
 func (c *river.Context) {...} // valid
@@ -147,12 +147,12 @@ e.Register(m)  // endpoint
 
 This will be passed as parameter to any endpoint handler that has `MyStruct`
 as a function parameter.
-```
+```go
 func handle(c *river.Context, m MyStruct) { ... }
 ```
 
 Middlewares can also register request scoped service.
-```
+```go
 func AuthMiddleware(c *river.Context) {
     var session *Session
     ... // retrieve session
