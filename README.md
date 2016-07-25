@@ -115,7 +115,7 @@ A middleware is any function that takes in the context.
 type Middleware func(c *river.Context)
 ```
 
-River comes with `river.Logger()` and `river.Recovery()` for logging and panic recovery.  
+River comes with `river.Recovery()` for panic recovery.  
 
 ```go
 rv.Use(Middleware) // global
