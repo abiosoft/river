@@ -13,6 +13,7 @@ type River struct {
 	middlewareChain
 	renderer Renderer
 	serviceInjector
+	errHandler ErrHandler
 	verbose
 }
 
@@ -113,6 +114,13 @@ func (rv *River) NotFound(h Handler) *River {
 	} else {
 		rv.r.NotFound = rv.routerHandleNoEndpoint(handlerToMiddleware(h))
 	}
+	return rv
+}
+
+// RenderError sets the handler that handles error
+// returned by a Renderer.
+func (rv *River) RenderError(h ErrHandler) *River {
+	rv.errHandler = h
 	return rv
 }
 

@@ -18,6 +18,7 @@ type Context struct {
 	params        httprouter.Params
 	values        map[string]interface{}
 	renderer      Renderer
+	errHandler    ErrHandler
 	middlewares   []Middleware
 	jsonDecoder   jsonDecoder
 	headerWritten bool
@@ -116,16 +117,22 @@ func (c *Context) Set(key string, value interface{}) {
 // Render renders data using the current endpoint's renderer (if any)
 // or global renderer (if any) or PlainRenderer; in that preference order.
 // status is HTTP status code to respond with.
-func (c *Context) Render(status int, data interface{}) error {
+func (c *Context) Render(status int, data interface{}) {
 	c.WriteHeader(status)
-	return c.renderer(c, data)
+	err := c.renderer(c, data)
+	if err != nil && c.errHandler != nil {
+		c.errHandler(c, err)
+	}
 }
 
 // RenderEmpty renders status text for status as body.
 // status is HTTP status code to respond with.
-func (c *Context) RenderEmpty(status int) error {
+func (c *Context) RenderEmpty(status int) {
 	c.WriteHeader(status)
-	return PlainRenderer(c, http.StatusText(status))
+	err := PlainRenderer(c, http.StatusText(status))
+	if err != nil && c.errHandler != nil {
+		c.errHandler(c, err)
+	}
 }
 
 // Status returns the response status code. This returns 0 unless response

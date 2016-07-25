@@ -91,8 +91,7 @@ e.Get("/", handler).Post(...).Put(...) // method chaining
 e.Handle(method, ...) // for custom request methods
 ```
 
-Any function can be an handler thanks to dependency injection. 
-River is also compatible with `http.Handler`. 
+River supports dependency injection. With that, any function can be an endpoint handler.  
 ```go
 func () {...} // valid
 func (c *river.Context) {...} // valid
@@ -111,7 +110,7 @@ func (c *river.Context){
 ```
 
 ### Middleware
-A middleware is any function that takes in the context.
+Any function that takes in the context can be used as a middleware.
 ```go
 type Middleware func(c *river.Context)
 ```
@@ -123,7 +122,7 @@ rv.Use(Middleware) // global
 e.Use(Middleware)  // endpoint
 ```
 
-Middleware determines if request should continue. 
+Middleware can choose to terminate request flow by not calling `c.Next()`. e.g. Authentication middleware.
 ```go
 func (c *river.Context){
     ... // do something before

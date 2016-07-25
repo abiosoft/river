@@ -25,3 +25,6 @@ func PlainRenderer(c *Context, data interface{}) error {
 	_, err := fmt.Fprint(c, data)
 	return err
 }
+
+// ErrHandler handles error returned by Renderer.
+type ErrHandler func(c *Context, err error)
