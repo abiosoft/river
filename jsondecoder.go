@@ -28,7 +28,7 @@ func (j *jsonDecoder) decode(v interface{}) (err error) {
 			if _, ok := err1.(error); ok {
 				err = err1.(error)
 			} else {
-				err = fmt.Errorf("Unidenfied error %v", err1)
+				err = fmt.Errorf("Unidenfied error: %v", err1)
 			}
 		}
 	}()

@@ -6,15 +6,16 @@ import (
 )
 
 // Handler is an endpoint handler with support for dependency injection.
-// Any function type is a valid Handler; including http.Handler.
+// Any function type (including http.Handler) is a valid Handler.
 // Function parameters will be injected accordingly.
 //
 // If a service is not previously registered and it is not one of
 // *river.Context, http.ResponseWriter and *http.Request, zero value of the type
 // (or nil if the type is a pointer) will be passed as the parameter.
 //
-// If a non function type is passed as Handler to endpoint
-// request functions (Get, Post, Handle e.t.c.), a panic occurs.
+// If there is an attempt to register a non function type as
+// a request handler, a panic occurs immediately. This
+// prevents possible runtime panic.
 //
 // The return values of the function (if any) are discarded.
 type Handler interface{}
@@ -86,11 +87,7 @@ func (e *Endpoint) set(subpath string, method string, h Handler) {
 	if e.handlers[subpath] == nil {
 		e.handlers[subpath] = make(endpointHandlers)
 	}
-	if reflect.TypeOf(h).Kind() != reflect.Func {
-		// this is the beginning of the app, safer to panic here
-		// and prevent possible request time panic.
-		panic("Cannot use non function type as EndpointHandler")
-	}
+	mustBeHandler(h)
 	e.handlers[subpath][method] = h
 }
 
@@ -105,6 +102,7 @@ func handlerToMiddleware(h Handler) Middleware {
 		return toMiddleware(handler)
 	}
 
+	mustBeHandler(h)
 	return func(c *Context) {
 		/* default injections */
 		// context
@@ -121,4 +119,12 @@ func handlerToMiddleware(h Handler) Middleware {
 		c.invoke(h)
 	}
 
+}
+
+func mustBeHandler(h Handler) {
+	if reflect.TypeOf(h).Kind() != reflect.Func {
+		// this is called in the beginning of the app, safer to panic here
+		// and prevent possible request time panic.
+		panic("Cannot use non function type as Handler")
+	}
 }

@@ -3,8 +3,8 @@ package river
 import "net/http"
 
 // Middleware is River middleware.
-// A middleware determines if requests continues
-// to other middlewares.
+// A middleware needs to call c.Next()
+// for request to continue to other middlewares.
 //  func (c *river.Context){
 //    // do something before
 //    c.Next()
@@ -12,7 +12,7 @@ import "net/http"
 //  }
 type Middleware func(*Context)
 
-// middlewareChain is middleware chain.
+// middlewareChain is chain of middlewares.
 type middlewareChain []Middleware
 
 // Use adds middlewares to the middleware chain.
@@ -35,8 +35,8 @@ func toMiddleware(h http.Handler) Middleware {
 }
 
 // Recovery creates a panic recovery middleware.
-// Handlers passed will be called after recovery.
-func Recovery(handlers ...func(*Context, interface{})) Middleware {
+// handlers are called after recovery.
+func Recovery(handlers ...func(c *Context, err interface{})) Middleware {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {

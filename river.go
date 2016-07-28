@@ -138,11 +138,11 @@ func composeMiddlewares(rv *River, h Middleware, e *Endpoint) []Middleware {
 }
 
 func notFound(c *Context) {
-	c.RenderEmpty(http.StatusNotFound)
+	c.Render(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 }
 
 func notAllowed(c *Context) {
-	c.RenderEmpty(http.StatusMethodNotAllowed)
+	c.Render(http.StatusMethodNotAllowed, http.StatusText(http.StatusNotFound))
 }
 
 func notNilRenderer(r ...Renderer) Renderer {
